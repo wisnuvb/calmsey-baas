@@ -59,6 +59,8 @@ model Project {
   apiKeys     ApiKey[]
   settings    ProjectSettings?
   auditLogs   AuditLog[]
+  webhooks    Webhook[]
+  emailLogs   EmailLog[]
 }
 
 enum DbStatus {
@@ -173,4 +175,119 @@ enum AuditAction {
   BULK_DELETE
   EXPORT
   IMPORT
+}
+
+// Webhook - Event-driven HTTP callbacks
+model Webhook {
+  id          String   @id @default(cuid())
+
+  name        String
+  url         String   // Webhook endpoint URL
+  events      Json     // Array of event types to subscribe to
+  headers     Json?    // Custom headers to send
+  secret      String?  // Secret for signature verification
+
+  active      Boolean  @default(true)
+
+  // Retry configuration
+  maxRetries  Int      @default(3)
+  timeout     Int      @default(30000) // milliseconds
+
+  // Stats
+  lastTriggered DateTime?
+  successCount  Int      @default(0)
+  failureCount  Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  logs        WebhookLog[]
+
+  @@index([projectId])
+  @@index([active])
+}
+
+// Webhook delivery logs
+model WebhookLog {
+  id            String   @id @default(cuid())
+
+  webhookId     String
+  webhook       Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  event         String   // Event type (onCreate, onUpdate, etc)
+  payload       Json     // Data sent to webhook
+
+  status        WebhookStatus
+  statusCode    Int?     // HTTP status code
+  response      String?  // Response body
+  error         String?  // Error message if failed
+
+  attempt       Int      @default(1)
+  duration      Int?     // Request duration in ms
+
+  createdAt     DateTime @default(now())
+
+  @@index([webhookId, createdAt])
+  @@index([status])
+}
+
+enum WebhookStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  RETRYING
+}
+
+// Email logs
+model EmailLog {
+  id          String   @id @default(cuid())
+
+  to          String   // Recipient email
+  from        String?  // Sender email (can be default)
+  subject     String
+  body        String   @db.Text
+  html        String?  @db.Text
+
+  // Email type
+  type        EmailType
+
+  // Status
+  status      EmailStatus
+  error       String?
+  messageId   String?  // Email provider message ID
+
+  // Template info
+  template    String?
+  templateData Json?
+
+  // Metadata
+  metadata    Json?
+
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([status])
+  @@index([to])
+}
+
+enum EmailType {
+  TRANSACTIONAL
+  NOTIFICATION
+  MARKETING
+  SYSTEM
+}
+
+enum EmailStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  BOUNCED
 }
