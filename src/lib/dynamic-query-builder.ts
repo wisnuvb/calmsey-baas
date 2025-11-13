@@ -1383,4 +1383,183 @@ export class DynamicQueryBuilder {
       dateRange,
     };
   }
+
+  /**
+   * ========================================
+   * TRANSACTION SUPPORT
+   * ========================================
+   */
+
+  /**
+   * Execute multiple operations in a transaction
+   * All operations will succeed or all will fail (atomic)
+   */
+  async executeTransaction<T>(
+    operations: ((prisma: PrismaClient) => Promise<any>)[]
+  ): Promise<T[]> {
+    return await this.prisma.$transaction(operations.map((op) => op(this.prisma)));
+  }
+
+  /**
+   * Insert multiple records in a transaction
+   */
+  async insertTransaction(dataArray: Record<string, any>[]): Promise<any[]> {
+    await this.ensureTableExists();
+
+    const operations = dataArray.map((data) => {
+      return this.buildInsertOperation(data);
+    });
+
+    return await this.prisma.$transaction(operations);
+  }
+
+  /**
+   * Update multiple records in a transaction
+   */
+  async updateTransaction(
+    updates: Array<{ id: string; data: Record<string, any> }>
+  ): Promise<any[]> {
+    await this.ensureTableExists();
+
+    const operations = updates.map(({ id, data }) => {
+      return this.buildUpdateOperation(id, data);
+    });
+
+    return await this.prisma.$transaction(operations);
+  }
+
+  /**
+   * Delete multiple records in a transaction
+   */
+  async deleteTransaction(ids: string[]): Promise<number> {
+    await this.ensureTableExists();
+
+    const operations = ids.map((id) => {
+      return this.buildDeleteOperation(id);
+    });
+
+    await this.prisma.$transaction(operations);
+    return ids.length;
+  }
+
+  /**
+   * Build insert operation (for transactions)
+   */
+  private buildInsertOperation(data: Record<string, any>) {
+    const { id, ...dataWithoutId } = data;
+    const convertedData = this.convertDataTypes(dataWithoutId);
+
+    const validation = this.validateData(convertedData);
+    if (!validation.valid) {
+      throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
+    }
+
+    if (this.schema.timestamps) {
+      convertedData.createdAt = new Date();
+      convertedData.updatedAt = new Date();
+    }
+
+    const processedData: Record<string, any> = { ...convertedData };
+
+    for (const field of this.schema.fields) {
+      if (field.type === FieldType.RELATION && field.relation?.type === "many-to-many") {
+        const value = processedData[field.name];
+        if (Array.isArray(value)) {
+          processedData[field.name] = JSON.stringify(value);
+        }
+      }
+    }
+
+    const columns = Object.keys(processedData)
+      .map((key) => `"${key}"`)
+      .join(", ");
+    const placeholders = Object.keys(processedData)
+      .map((_, i) => `$${i + 1}`)
+      .join(", ");
+    const values = Object.values(processedData);
+
+    const sql = `
+      INSERT INTO "${this.tableName}" (${columns})
+      VALUES (${placeholders})
+      RETURNING *;
+    `;
+
+    return this.prisma.$queryRawUnsafe(sql, ...values);
+  }
+
+  /**
+   * Build update operation (for transactions)
+   */
+  private buildUpdateOperation(id: string, data: Record<string, any>) {
+    const convertedData = this.convertDataTypes(data);
+
+    if (this.schema.timestamps) {
+      convertedData.updatedAt = new Date();
+    }
+
+    const processedData: Record<string, any> = { ...convertedData };
+
+    for (const field of this.schema.fields) {
+      if (field.type === FieldType.RELATION && field.relation?.type === "many-to-many") {
+        const value = processedData[field.name];
+        if (value !== undefined && Array.isArray(value)) {
+          processedData[field.name] = JSON.stringify(value);
+        }
+      }
+    }
+
+    const updates = Object.keys(processedData)
+      .map((key, i) => `"${key}" = $${i + 2}`)
+      .join(", ");
+    const values = [id, ...Object.values(processedData)];
+
+    const sql = `
+      UPDATE "${this.tableName}"
+      SET ${updates}
+      WHERE "id" = $1
+      RETURNING *;
+    `;
+
+    return this.prisma.$queryRawUnsafe(sql, ...values);
+  }
+
+  /**
+   * Build delete operation (for transactions)
+   */
+  private buildDeleteOperation(id: string) {
+    if (this.schema.softDelete) {
+      const sql = `
+        UPDATE "${this.tableName}"
+        SET "deletedAt" = $2
+        WHERE "id" = $1;
+      `;
+      return this.prisma.$queryRawUnsafe(sql, id, new Date());
+    } else {
+      const sql = `
+        DELETE FROM "${this.tableName}"
+        WHERE "id" = $1;
+      `;
+      return this.prisma.$queryRawUnsafe(sql, id);
+    }
+  }
+
+  /**
+   * Execute custom SQL in transaction
+   * CAUTION: Use with care, ensure SQL is safe from injection
+   */
+  async executeRawTransaction(queries: Array<{ sql: string; params: any[] }>) {
+    const operations = queries.map(({ sql, params }) => {
+      return this.prisma.$queryRawUnsafe(sql, ...params);
+    });
+
+    return await this.prisma.$transaction(operations);
+  }
+
+  /**
+   * Get Prisma client instance (for advanced usage)
+   */
+  getPrismaClient(): PrismaClient {
+    return this.prisma;
+  }
 }
+

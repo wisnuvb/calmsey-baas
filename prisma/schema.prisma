@@ -38,15 +38,34 @@ model Project {
   slug        String   @unique
   description String?
   database    String?  // database name atau schema name
+
+  // Multi-database support
+  useDedicatedDb    Boolean  @default(false) // true jika pakai database terpisah
+  dbConnectionUrl   String?  // connection string untuk dedicated database
+  dbHost            String?  // host database (optional, extracted from connectionUrl)
+  dbPort            Int?     // port database
+  dbName            String?  // nama database
+  dbUser            String?  // username database
+  dbPassword        String?  // password database (encrypted)
+  dbStatus          DbStatus @default(ACTIVE) // status database connection
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   collections Collection[]
   apiKeys     ApiKey[]
   settings    ProjectSettings?
+  auditLogs   AuditLog[]
+}
+
+enum DbStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  MIGRATING
 }
 
 // Collection = Table definition (dynamic schema)
@@ -82,23 +101,76 @@ model ApiKey {
 // Project settings (email, storage, etc.)
 model ProjectSettings {
   id              String   @id @default(cuid())
-  
+
   // Email settings
   emailEnabled    Boolean  @default(false)
   emailProvider   String?
   emailConfig     Json?
-  
+
   // Storage settings
   storageType     String   @default("local")
   storageConfig   Json?
-  
+
   // Auth settings
   authEnabled     Boolean  @default(true)
   jwtExpiry       Int      @default(86400) // seconds
-  
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   projectId       String   @unique
   project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Audit Log - Track all data changes for compliance
+model AuditLog {
+  id            String   @id @default(cuid())
+
+  // Who made the change
+  userId        String?  // null if via API key
+  userEmail     String?
+  apiKeyId      String?
+  apiKeyName    String?
+
+  // What changed
+  action        AuditAction // CREATE, UPDATE, DELETE, etc
+  tableName     String   // collection table name
+  collectionId  String?  // reference to collection
+  recordId      String   // ID of the record that changed
+
+  // Change details
+  oldData       Json?    // snapshot before change
+  newData       Json?    // snapshot after change
+  changedFields Json?    // array of changed field names
+
+  // Context
+  ipAddress     String?
+  userAgent     String?
+  requestMethod String?  // GET, POST, PATCH, DELETE
+  requestPath   String?
+
+  // Transaction support
+  transactionId String?  // group related operations
+
+  // Project reference
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([userId])
+  @@index([tableName, recordId])
+  @@index([transactionId])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  BULK_CREATE
+  BULK_UPDATE
+  BULK_DELETE
+  EXPORT
+  IMPORT
 }
