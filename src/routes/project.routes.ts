@@ -3,11 +3,27 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authenticate } from '../middleware/auth.middleware';
 import { generateSlug, generateApiKey } from '../lib/utils';
+import { DatabaseManagerService } from '../lib/database-manager.service';
+
+// Initialize database manager
+const dbManager = new DatabaseManagerService(prisma);
 
 // Validation schemas
 const createProjectSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
+  // Multi-database options
+  useDedicatedDb: z.boolean().optional().default(false),
+  useSameServer: z.boolean().optional().default(true),
+  // Custom database config (optional, if not using same server)
+  dbConfig: z.object({
+    host: z.string(),
+    port: z.number(),
+    database: z.string(),
+    username: z.string(),
+    password: z.string(),
+    type: z.enum(['postgresql', 'mysql']).optional(),
+  }).optional(),
 });
 
 const updateProjectSchema = z.object({
@@ -110,38 +126,121 @@ export async function projectRoutes(fastify: FastifyInstance) {
         slug = `${slug}-${Date.now()}`;
       }
 
-      // Create project with default settings and API key
-      const project = await prisma.project.create({
-        data: {
-          name: body.name,
-          description: body.description,
-          slug,
-          userId,
-          settings: {
-            create: {
-              authEnabled: true,
-              emailEnabled: false,
-              storageType: 'local',
-            },
-          },
-          apiKeys: {
-            create: {
-              name: 'Default API Key',
-              key: generateApiKey('sk'),
-              userId,
-            },
-          },
-        },
-        include: {
-          settings: true,
-          apiKeys: true,
-        },
-      });
+      // Handle database creation if requested
+      let dbConfig: any = null;
+      let connectionUrl: string | null = null;
 
-      return reply.status(201).send({
-        success: true,
-        data: project,
-      });
+      if (body.useDedicatedDb) {
+        try {
+          // Create dedicated database
+          dbConfig = await dbManager.createDatabase({
+            projectId: 'temp', // will be replaced after project creation
+            projectSlug: slug,
+            config: body.dbConfig,
+            useSameServer: body.useSameServer,
+          });
+
+          // Build connection URL
+          connectionUrl = dbManager.buildConnectionUrl(dbConfig);
+
+          // Encrypt connection URL for storage
+          const encryptedUrl = dbManager.encryptConnectionUrl(connectionUrl);
+
+          // Initialize database schema
+          await dbManager.initializeProjectDatabase('temp', connectionUrl);
+
+          // Create project with database details
+          const project = await prisma.project.create({
+            data: {
+              name: body.name,
+              description: body.description,
+              slug,
+              userId,
+              useDedicatedDb: true,
+              dbConnectionUrl: encryptedUrl,
+              dbHost: dbConfig.host,
+              dbPort: dbConfig.port,
+              dbName: dbConfig.database,
+              dbUser: dbConfig.username,
+              dbPassword: dbManager.encryptConnectionUrl(dbConfig.password), // encrypt password
+              dbStatus: 'ACTIVE',
+              settings: {
+                create: {
+                  authEnabled: true,
+                  emailEnabled: false,
+                  storageType: 'local',
+                },
+              },
+              apiKeys: {
+                create: {
+                  name: 'Default API Key',
+                  key: generateApiKey('sk'),
+                  userId,
+                },
+              },
+            },
+            include: {
+              settings: true,
+              apiKeys: true,
+            },
+          });
+
+          return reply.status(201).send({
+            success: true,
+            data: {
+              ...project,
+              database: {
+                host: dbConfig.host,
+                port: dbConfig.port,
+                name: dbConfig.database,
+                status: 'ACTIVE',
+              },
+            },
+          });
+        } catch (dbErr: any) {
+          fastify.log.error('Failed to create dedicated database:', dbErr);
+
+          return reply.status(500).send({
+            success: false,
+            error: 'Failed to create dedicated database',
+            details: dbErr.message,
+          });
+        }
+      } else {
+        // Create project without dedicated database (use main database)
+        const project = await prisma.project.create({
+          data: {
+            name: body.name,
+            description: body.description,
+            slug,
+            userId,
+            useDedicatedDb: false,
+            settings: {
+              create: {
+                authEnabled: true,
+                emailEnabled: false,
+                storageType: 'local',
+              },
+            },
+            apiKeys: {
+              create: {
+                name: 'Default API Key',
+                key: generateApiKey('sk'),
+                userId,
+              },
+            },
+          },
+          include: {
+            settings: true,
+            apiKeys: true,
+          },
+        });
+
+        return reply.status(201).send({
+          success: true,
+          data: project,
+        });
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         return reply.status(400).send({
@@ -151,6 +250,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
         });
       }
 
+      fastify.log.error('Failed to create project:', err);
       return reply.status(500).send({
         success: false,
         error: 'Failed to create project',
