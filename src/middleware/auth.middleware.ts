@@ -1,5 +1,5 @@
-import { FastifyReply, FastifyRequest } from 'fastify';
-import { AuthenticatedRequest } from '../types';
+import { FastifyReply, FastifyRequest } from "fastify";
+import { AuthenticatedRequest } from "../types";
 
 export async function authenticate(
   request: FastifyRequest,
@@ -8,10 +8,37 @@ export async function authenticate(
   try {
     await request.jwtVerify();
     // JWT payload will be available in request.user
-  } catch (err) {
-    reply.status(401).send({
+  } catch (err: any) {
+    // Handle different JWT errors
+    if (err.code === "FST_JWT_AUTHORIZATION_TOKEN_EXPIRED") {
+      return reply.status(401).send({
+        success: false,
+        error: "Token expired",
+        code: "TOKEN_EXPIRED",
+      });
+    }
+
+    if (err.code === "FST_JWT_AUTHORIZATION_TOKEN_INVALID") {
+      return reply.status(401).send({
+        success: false,
+        error: "Invalid token",
+        code: "TOKEN_INVALID",
+      });
+    }
+
+    if (err.code === "FST_JWT_NO_AUTHORIZATION_IN_HEADER") {
+      return reply.status(401).send({
+        success: false,
+        error: "No authorization token provided",
+        code: "TOKEN_MISSING",
+      });
+    }
+
+    // Generic error
+    return reply.status(401).send({
       success: false,
-      error: 'Unauthorized - Invalid or missing token',
+      error: "Unauthorized - Invalid or missing token",
+      code: "UNAUTHORIZED",
     });
   }
 }
@@ -21,18 +48,18 @@ export async function authenticateApiKey(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const apiKey = request.headers['x-api-key'] as string;
+  const apiKey = request.headers["x-api-key"] as string;
 
   if (!apiKey) {
     return reply.status(401).send({
       success: false,
-      error: 'API key is required',
+      error: "API key is required",
     });
   }
 
   try {
-    const { prisma } = await import('../lib/prisma');
-    
+    const { prisma } = await import("../lib/prisma");
+
     const key = await prisma.apiKey.findUnique({
       where: { key: apiKey },
       include: { project: true },
@@ -41,7 +68,7 @@ export async function authenticateApiKey(
     if (!key) {
       return reply.status(401).send({
         success: false,
-        error: 'Invalid API key',
+        error: "Invalid API key",
       });
     }
 
@@ -57,7 +84,7 @@ export async function authenticateApiKey(
   } catch (err) {
     return reply.status(500).send({
       success: false,
-      error: 'Authentication failed',
+      error: "Authentication failed",
     });
   }
 }
@@ -67,10 +94,10 @@ export async function requireAdmin(
   request: AuthenticatedRequest,
   reply: FastifyReply
 ) {
-  if (request.user.role !== 'ADMIN') {
+  if (request.user.role !== "ADMIN") {
     return reply.status(403).send({
       success: false,
-      error: 'Forbidden - Admin access required',
+      error: "Forbidden - Admin access required",
     });
   }
 }

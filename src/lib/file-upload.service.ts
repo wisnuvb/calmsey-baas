@@ -1,17 +1,35 @@
-import { MultipartFile } from '@fastify/multipart';
-import { createWriteStream } from 'fs';
-import { mkdir } from 'fs/promises';
-import { join, extname } from 'path';
-import { pipeline } from 'stream/promises';
-import { customAlphabet } from 'nanoid';
+import { MultipartFile } from "@fastify/multipart";
+import { createWriteStream } from "fs";
+import { mkdir } from "fs/promises";
+import { join, extname } from "path";
+import { pipeline } from "stream/promises";
+import { customAlphabet } from "nanoid";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Readable } from "stream";
 
-const nanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 16);
+const nanoid = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 16);
 
 export interface UploadOptions {
-  storageType: 'local' | 's3';
+  storageType: "local" | "s3";
   maxFileSize?: number;
   allowedExtensions?: string[];
   uploadDir?: string;
+  // S3 specific options
+  s3Config?: {
+    region?: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    bucketName?: string;
+    endpoint?: string; // For S3-compatible services (MinIO, DigitalOcean Spaces, etc.)
+    pathPrefix?: string; // Prefix for S3 keys (e.g., "uploads/", "project-123/")
+    publicUrl?: string; // Custom public URL (for CDN or custom domain)
+  };
 }
 
 export interface UploadResult {
@@ -21,18 +39,124 @@ export interface UploadResult {
   mimetype: string;
   url: string;
   path: string;
+  // S3 specific
+  bucket?: string;
+  key?: string;
 }
 
 export class FileUploadService {
-  private options: Required<UploadOptions>;
+  private options: Required<Omit<UploadOptions, "s3Config">> & {
+    s3Config?: UploadOptions["s3Config"];
+  };
+  private s3Client: S3Client | null = null;
 
-  constructor(options: UploadOptions = { storageType: 'local' }) {
+  constructor(options: UploadOptions = { storageType: "local" }) {
     this.options = {
-      storageType: options.storageType || 'local',
+      storageType: options.storageType || "local",
       maxFileSize: options.maxFileSize || 10 * 1024 * 1024, // 10MB default
       allowedExtensions: options.allowedExtensions || [],
-      uploadDir: options.uploadDir || join(process.cwd(), 'uploads'),
+      uploadDir: options.uploadDir || join(process.cwd(), "uploads"),
+      s3Config: options.s3Config,
     };
+
+    // Initialize S3 client if S3 storage is used
+    if (this.options.storageType === "s3") {
+      this.initializeS3Client();
+    }
+  }
+
+  /**
+   * Initialize S3 client
+   */
+  private initializeS3Client(): void {
+    const config = this.options.s3Config || {};
+
+    const s3Config: any = {
+      region: config.region || process.env.AWS_REGION || "us-east-1",
+    };
+
+    // Credentials
+    if (config.accessKeyId && config.secretAccessKey) {
+      s3Config.credentials = {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      };
+    } else if (
+      process.env.AWS_ACCESS_KEY_ID &&
+      process.env.AWS_SECRET_ACCESS_KEY
+    ) {
+      s3Config.credentials = {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      };
+    }
+
+    // Custom endpoint (for S3-compatible services)
+    if (config.endpoint) {
+      s3Config.endpoint = config.endpoint;
+      s3Config.forcePathStyle = true; // Required for some S3-compatible services
+    }
+
+    this.s3Client = new S3Client(s3Config);
+  }
+
+  /**
+   * Get S3 bucket name
+   */
+  private getBucketName(): string {
+    const config = this.options.s3Config;
+    return (
+      config?.bucketName ||
+      process.env.AWS_BUCKET_NAME ||
+      process.env.S3_BUCKET_NAME ||
+      ""
+    );
+  }
+
+  /**
+   * Get S3 key (path) for file
+   */
+  private getS3Key(filename: string, prefix?: string): string {
+    const pathPrefix =
+      prefix || this.options.s3Config?.pathPrefix || "uploads/";
+    // Ensure prefix ends with /
+    const normalizedPrefix = pathPrefix.endsWith("/")
+      ? pathPrefix
+      : `${pathPrefix}/`;
+    return `${normalizedPrefix}${filename}`;
+  }
+
+  /**
+   * Get public URL for S3 object
+   */
+  private getS3PublicUrl(key: string): string {
+    const config = this.options.s3Config;
+    const bucketName = this.getBucketName();
+    const region = config?.region || process.env.AWS_REGION || "us-east-1";
+
+    // Custom public URL (for CDN)
+    if (config?.publicUrl) {
+      return `${config.publicUrl}/${key}`;
+    }
+
+    // Custom endpoint (for S3-compatible services)
+    if (config?.endpoint) {
+      return `${config.endpoint}/${bucketName}/${key}`;
+    }
+
+    // Standard AWS S3 URL
+    return `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+  }
+
+  /**
+   * Convert stream to buffer
+   */
+  private async streamToBuffer(stream: Readable): Promise<Buffer> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
   }
 
   /**
@@ -41,7 +165,9 @@ export class FileUploadService {
   async upload(file: MultipartFile): Promise<UploadResult> {
     // Validate file size
     if (file.file.bytesRead > this.options.maxFileSize) {
-      throw new Error(`File size exceeds maximum allowed size of ${this.options.maxFileSize} bytes`);
+      throw new Error(
+        `File size exceeds maximum allowed size of ${this.options.maxFileSize} bytes`
+      );
     }
 
     // Validate file extension
@@ -53,13 +179,13 @@ export class FileUploadService {
     }
 
     // Upload based on storage type
-    if (this.options.storageType === 'local') {
+    if (this.options.storageType === "local") {
       return this.uploadLocal(file);
-    } else if (this.options.storageType === 's3') {
+    } else if (this.options.storageType === "s3") {
       return this.uploadS3(file);
     }
 
-    throw new Error('Invalid storage type');
+    throw new Error("Invalid storage type");
   }
 
   /**
@@ -88,58 +214,67 @@ export class FileUploadService {
   }
 
   /**
-   * Upload to S3 (placeholder - needs AWS SDK)
+   * Upload to S3
    */
   private async uploadS3(file: MultipartFile): Promise<UploadResult> {
-    // TODO: Implement S3 upload using AWS SDK
-    // This is a placeholder implementation
-    
-    throw new Error('S3 upload not yet implemented. Please use local storage or implement AWS S3 integration.');
+    if (!this.s3Client) {
+      throw new Error("S3 client not initialized");
+    }
 
-    /*
-    Example implementation:
-    
-    import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-    
-    const s3Client = new S3Client({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+    const bucketName = this.getBucketName();
+    if (!bucketName) {
+      throw new Error("S3 bucket name is required");
+    }
 
+    // Generate unique filename
     const ext = extname(file.filename);
     const filename = `${nanoid()}${ext}`;
-    const key = `uploads/${filename}`;
+    const key = this.getS3Key(filename);
 
-    const buffer = await file.toBuffer();
+    // Convert stream to buffer
+    const buffer = await this.streamToBuffer(file.file);
 
-    await s3Client.send(new PutObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key,
-      Body: buffer,
-      ContentType: file.mimetype,
-    }));
+    // Upload to S3
+    try {
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: key,
+          Body: buffer,
+          ContentType: file.mimetype || "application/octet-stream",
+          // Optional: Add metadata
+          Metadata: {
+            originalName: file.filename,
+            uploadedAt: new Date().toISOString(),
+          },
+        })
+      );
+    } catch (err: any) {
+      throw new Error(`Failed to upload to S3: ${err.message}`);
+    }
+
+    // Get public URL
+    const url = this.getS3PublicUrl(key);
 
     return {
       filename,
       originalName: file.filename,
       size: buffer.length,
-      mimetype: file.mimetype,
-      url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
+      mimetype: file.mimetype || "application/octet-stream",
+      url,
       path: key,
+      bucket: bucketName,
+      key,
     };
-    */
   }
 
   /**
    * Delete file
    */
   async delete(filepath: string): Promise<boolean> {
-    if (this.options.storageType === 'local') {
+    if (this.options.storageType === "local") {
       return this.deleteLocal(filepath);
-    } else if (this.options.storageType === 's3') {
+    } else if (this.options.storageType === "s3") {
       return this.deleteS3(filepath);
     }
 
@@ -151,7 +286,7 @@ export class FileUploadService {
    */
   private async deleteLocal(filepath: string): Promise<boolean> {
     try {
-      const { unlink } = await import('fs/promises');
+      const { unlink } = await import("fs/promises");
       await unlink(filepath);
       return true;
     } catch (err) {
@@ -160,24 +295,57 @@ export class FileUploadService {
   }
 
   /**
-   * Delete from S3 (placeholder)
+   * Delete from S3
    */
   private async deleteS3(key: string): Promise<boolean> {
-    // TODO: Implement S3 delete
-    throw new Error('S3 delete not yet implemented');
+    if (!this.s3Client) {
+      throw new Error("S3 client not initialized");
+    }
 
-    /*
-    Example implementation:
-    
-    import { DeleteObjectCommand } from '@aws-sdk/client-s3';
-    
-    await s3Client.send(new DeleteObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key,
-    }));
-    
-    return true;
-    */
+    const bucketName = this.getBucketName();
+    if (!bucketName) {
+      throw new Error("S3 bucket name is required");
+    }
+
+    try {
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: bucketName,
+          Key: key,
+        })
+      );
+      return true;
+    } catch (err: any) {
+      throw new Error(`Failed to delete from S3: ${err.message}`);
+    }
+  }
+
+  /**
+   * Generate presigned URL for S3 object (for temporary access)
+   */
+  async getPresignedUrl(
+    key: string,
+    expiresIn: number = 3600
+  ): Promise<string> {
+    if (!this.s3Client) {
+      throw new Error("S3 client not initialized");
+    }
+
+    const bucketName = this.getBucketName();
+    if (!bucketName) {
+      throw new Error("S3 bucket name is required");
+    }
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      });
+
+      return await getSignedUrl(this.s3Client, command, { expiresIn });
+    } catch (err: any) {
+      throw new Error(`Failed to generate presigned URL: ${err.message}`);
+    }
   }
 }
 
@@ -185,20 +353,20 @@ export class FileUploadService {
  * Helper to validate file type by MIME type
  */
 export function isImageFile(mimetype: string): boolean {
-  return mimetype.startsWith('image/');
+  return mimetype.startsWith("image/");
 }
 
 export function isVideoFile(mimetype: string): boolean {
-  return mimetype.startsWith('video/');
+  return mimetype.startsWith("video/");
 }
 
 export function isDocumentFile(mimetype: string): boolean {
   const documentTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ];
   return documentTypes.includes(mimetype);
 }

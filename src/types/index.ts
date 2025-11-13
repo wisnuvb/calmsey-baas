@@ -1,4 +1,4 @@
-import { FastifyRequest } from 'fastify';
+import { FastifyRequest } from "fastify";
 
 // Extend FastifyRequest to include user data
 export interface AuthenticatedRequest extends FastifyRequest {
@@ -11,17 +11,17 @@ export interface AuthenticatedRequest extends FastifyRequest {
 
 // Field types for dynamic schema
 export enum FieldType {
-  STRING = 'string',
-  TEXT = 'text',
-  NUMBER = 'number',
-  BOOLEAN = 'boolean',
-  DATE = 'date',
-  DATETIME = 'datetime',
-  EMAIL = 'email',
-  URL = 'url',
-  JSON = 'json',
-  RELATION = 'relation',
-  FILE = 'file',
+  STRING = "string",
+  TEXT = "text",
+  NUMBER = "number",
+  BOOLEAN = "boolean",
+  DATE = "date",
+  DATETIME = "datetime",
+  EMAIL = "email",
+  URL = "url",
+  JSON = "json",
+  RELATION = "relation",
+  FILE = "file",
 }
 
 // Field definition in schema
@@ -30,6 +30,7 @@ export interface FieldDefinition {
   type: FieldType;
   required?: boolean;
   unique?: boolean;
+  indexed?: boolean;
   default?: any;
   validation?: {
     min?: number;
@@ -40,7 +41,7 @@ export interface FieldDefinition {
   // For relations
   relation?: {
     collection: string;
-    type: 'one-to-one' | 'one-to-many' | 'many-to-many';
+    type: "one-to-one" | "one-to-many" | "many-to-many";
   };
 }
 
@@ -49,6 +50,7 @@ export interface CollectionSchema {
   fields: FieldDefinition[];
   timestamps?: boolean; // auto-add createdAt, updatedAt
   softDelete?: boolean; // auto-add deletedAt
+  idType?: "uuid" | "autoincrement"; // ID generation type, default: 'uuid'
 }
 
 // Dynamic API response structure
@@ -63,12 +65,47 @@ export interface ApiResponse<T = any> {
   };
 }
 
-// Query parameters for list endpoints
+// Advanced filter operators
+export type FilterOperator =
+  | "$eq" // equals
+  | "$ne" // not equals
+  | "$gt" // greater than
+  | "$gte" // greater than or equal
+  | "$lt" // less than
+  | "$lte" // less than or equal
+  | "$in" // in array
+  | "$nin" // not in array
+  | "$like" // LIKE pattern
+  | "$ilike" // ILIKE pattern (case-insensitive)
+  | "$isNull" // is null
+  | "$isNotNull" // is not null
+  | "$between" // between two values
+  | "$contains" // contains (for JSON/array fields)
+  | "$startsWith" // starts with
+  | "$endsWith"; // ends with
+
+// Advanced filter structure
+export interface AdvancedFilter {
+  [field: string]:
+    | any
+    | {
+        [operator in FilterOperator]?: any;
+      }
+    | {
+        $or?: AdvancedFilter[];
+        $and?: AdvancedFilter[];
+        $not?: AdvancedFilter;
+      };
+}
+
+// Updated QueryParams with advanced filter support
 export interface QueryParams {
   page?: number;
   limit?: number;
   sort?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
   search?: string;
-  filter?: Record<string, any>;
+  filter?: Record<string, any> | AdvancedFilter; // Support both simple and advanced
+  populate?: string | string[];
+  fields?: string | string[]; // Field selection
 }

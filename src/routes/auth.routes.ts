@@ -3,6 +3,10 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { authenticate } from "../middleware/auth.middleware";
+import {
+  createRateLimitConfig,
+  rateLimitByUserId,
+} from "../middleware/rate-limit.middleware";
 
 // Validation schemas
 const registerSchema = z.object({
@@ -17,139 +21,284 @@ const loginSchema = z.object({
 });
 
 export async function authRoutes(fastify: FastifyInstance) {
-  // Register new user
-  fastify.post("/register", async (request, reply) => {
-    try {
-      const body = registerSchema.parse(request.body);
-
-      // Check if user already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email: body.email },
-      });
-
-      if (existingUser) {
-        return reply.status(400).send({
-          success: false,
-          error: "User with this email already exists",
-        });
-      }
-
-      // Hash password
-      const hashedPassword = await hashPassword(body.password);
-
-      // Create user
-      const user = await prisma.user.create({
-        data: {
-          email: body.email,
-          password: hashedPassword,
-          name: body.name,
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          createdAt: true,
-        },
-      });
-
-      // Generate JWT token
-      const token = fastify.jwt.sign({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      });
-
-      return reply.status(201).send({
-        success: true,
-        data: {
-          user,
-          token,
-        },
-      });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return reply.status(400).send({
-          success: false,
-          error: "Validation error",
-          details: err.errors,
-        });
-      }
-
-      return reply.status(500).send({
-        success: false,
-        error: "Failed to register user",
-      });
-    }
+  // Rate limit config untuk auth endpoints (lebih strict)
+  const authRateLimit = createRateLimitConfig({
+    max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || "10"), // 10 requests
+    timeWindow: process.env.AUTH_RATE_LIMIT_WINDOW || "15 minutes",
   });
 
-  // Login
-  fastify.post("/login", async (request, reply) => {
-    try {
-      const body = loginSchema.parse(request.body);
+  // Register new user
+  fastify.post(
+    "/register",
+    {
+      config: {
+        rateLimit: authRateLimit,
+      },
+      schema: {
+        tags: ["auth"],
+        summary: "Register new user",
+        description: "Create a new user account",
+        body: {
+          type: "object",
+          required: ["email", "password", "name"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+            },
+            password: {
+              type: "string",
+              format: "password",
+              minLength: 8,
+            },
+            name: {
+              type: "string",
+            },
+          },
+        },
+        response: {
+          201: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  user: { type: "object" },
+                  token: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const body = registerSchema.parse(request.body);
 
-      // Find user
-      const user = await prisma.user.findUnique({
-        where: { email: body.email },
-      });
-
-      if (!user) {
-        return reply.status(401).send({
-          success: false,
-          error: "Invalid credentials",
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({
+          where: { email: body.email },
         });
-      }
 
-      // Verify password
-      const isValid = await verifyPassword(body.password, user.password);
+        if (existingUser) {
+          return reply.status(400).send({
+            success: false,
+            error: "User with this email already exists",
+          });
+        }
 
-      if (!isValid) {
-        return reply.status(401).send({
-          success: false,
-          error: "Invalid credentials",
+        // Hash password
+        const hashedPassword = await hashPassword(body.password);
+
+        // Create user
+        const user = await prisma.user.create({
+          data: {
+            email: body.email,
+            password: hashedPassword,
+            name: body.name,
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            createdAt: true,
+          },
         });
-      }
 
-      // Generate JWT token
-      const token = fastify.jwt.sign({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      });
-
-      return reply.send({
-        success: true,
-        data: {
-          user: {
+        // Generate JWT token with expiry
+        const jwtExpiry = process.env.JWT_EXPIRY || "24h";
+        const token = fastify.jwt.sign(
+          {
             id: user.id,
             email: user.email,
-            name: user.name,
             role: user.role,
           },
-          token,
-        },
-      });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return reply.status(400).send({
+          {
+            expiresIn: jwtExpiry,
+          }
+        );
+
+        return reply.status(201).send({
+          success: true,
+          data: {
+            user,
+            token,
+            expiresIn: jwtExpiry, // Add this
+          },
+        });
+      } catch (err) {
+        if (err instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: "Validation error",
+            details: err.errors,
+          });
+        }
+
+        return reply.status(500).send({
           success: false,
-          error: "Validation error",
-          details: err.errors,
+          error: "Failed to register user",
         });
       }
-
-      return reply.status(500).send({
-        success: false,
-        error: "Failed to login",
-      });
     }
-  });
+  );
+
+  // Login
+  fastify.post(
+    "/login",
+    {
+      config: {
+        rateLimit: authRateLimit,
+      },
+      schema: {
+        tags: ["auth"],
+        summary: "Login user",
+        description: "Authenticate user and get JWT token",
+        body: {
+          type: "object",
+          required: ["email", "password"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+            },
+            password: {
+              type: "string",
+              format: "password",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  user: { type: "object" },
+                  token: { type: "string" },
+                },
+              },
+            },
+          },
+          401: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const body = loginSchema.parse(request.body);
+
+        // Find user
+        const user = await prisma.user.findUnique({
+          where: { email: body.email },
+        });
+
+        if (!user) {
+          return reply.status(401).send({
+            success: false,
+            error: "Invalid credentials",
+          });
+        }
+
+        // Verify password
+        const isValid = await verifyPassword(body.password, user.password);
+
+        if (!isValid) {
+          return reply.status(401).send({
+            success: false,
+            error: "Invalid credentials",
+          });
+        }
+
+        // Generate JWT token with expiry
+        const jwtExpiry = process.env.JWT_EXPIRY || "24h";
+        const token = fastify.jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+          },
+          {
+            expiresIn: jwtExpiry,
+          }
+        );
+
+        return reply.send({
+          success: true,
+          data: {
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            },
+            token,
+          },
+        });
+      } catch (err) {
+        if (err instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: "Validation error",
+            details: err.errors,
+          });
+        }
+
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to login",
+        });
+      }
+    }
+  );
 
   // Get current user (protected route)
   fastify.get(
     "/me",
     {
       onRequest: [authenticate],
+      config: {
+        rateLimit: createRateLimitConfig({
+          max: parseInt(process.env.USER_RATE_LIMIT_MAX || "100"),
+          timeWindow: process.env.USER_RATE_LIMIT_WINDOW || "1 minute",
+          keyGenerator: rateLimitByUserId,
+        }),
+      },
+      schema: {
+        tags: ["auth"],
+        summary: "Get current user",
+        description: "Retrieve the current authenticated user's details",
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  email: { type: "string" },
+                  name: { type: "string" },
+                  role: { type: "string" },
+                  createdAt: { type: "string", format: "date-time" },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     async (request, reply) => {
       try {
@@ -172,6 +321,78 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(500).send({
           success: false,
           error: "Failed to get user",
+        });
+      }
+    }
+  );
+
+  // Refresh token (protected route)
+  fastify.post(
+    "/refresh",
+    {
+      onRequest: [authenticate],
+      schema: {
+        tags: ["auth"],
+        summary: "Refresh JWT token",
+        description: "Generate a new JWT token for the authenticated user",
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  token: { type: "string" },
+                  expiresIn: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const user = request.user as any;
+
+        // Verify user still exists
+        const existingUser = await prisma.user.findUnique({
+          where: { id: user.id },
+        });
+
+        if (!existingUser) {
+          return reply.status(401).send({
+            success: false,
+            error: "User not found",
+          });
+        }
+
+        // Generate new JWT token
+        const jwtExpiry = process.env.JWT_EXPIRY || "24h";
+        const token = fastify.jwt.sign(
+          {
+            id: existingUser.id,
+            email: existingUser.email,
+            role: existingUser.role,
+          },
+          {
+            expiresIn: jwtExpiry,
+          }
+        );
+
+        return reply.send({
+          success: true,
+          data: {
+            token,
+            expiresIn: jwtExpiry,
+          },
+        });
+      } catch (err) {
+        return reply.status(500).send({
+          success: false,
+          error: "Failed to refresh token",
         });
       }
     }

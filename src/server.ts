@@ -2,6 +2,8 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import dotenv from "dotenv";
 import { prisma } from "./lib/prisma";
 import { authRoutes } from "./routes/auth.routes";
@@ -9,6 +11,7 @@ import { projectRoutes } from "./routes/project.routes";
 import { collectionRoutes } from "./routes/collection.routes";
 import { dynamicApiRoutes } from "./routes/dynamic-api.routes";
 import { uploadRoutes } from "./routes/upload.routes";
+import { registerRateLimit } from "./middleware/rate-limit.middleware";
 
 // Load environment variables
 dotenv.config();
@@ -31,9 +34,126 @@ async function registerPlugins() {
     credentials: true,
   });
 
+  // Global error handler for JSON parsing errors
+  fastify.setErrorHandler((error, request, reply) => {
+    // Handle JSON parsing errors
+    if (error instanceof SyntaxError || error.message?.includes("JSON")) {
+      fastify.log.error({
+        error: error.message,
+        stack: error.stack,
+        url: request.url,
+        method: request.method,
+      });
+
+      return reply.status(400).send({
+        success: false,
+        error: "Invalid JSON format",
+        details: {
+          message: error.message || "Failed to parse request body",
+          hint: "Check your JSON syntax. Numbers with leading zeros (e.g., 02384934) are invalid. Use strings or remove leading zeros.",
+        },
+      });
+    }
+
+    // Handle validation errors
+    if (error.validation) {
+      return reply.status(400).send({
+        success: false,
+        error: "Validation error",
+        details: {
+          message: "Request validation failed",
+          errors: error.validation,
+        },
+      });
+    }
+
+    // Default error handler
+    fastify.log.error(error);
+    return reply.status(error.statusCode || 500).send({
+      success: false,
+      error: error.message || "Internal server error",
+    });
+  });
+
+  // Swagger/OpenAPI Documentation
+  await fastify.register(swagger, {
+    openapi: {
+      openapi: "3.0.0",
+      info: {
+        title: "Calmsey BaaS API",
+        description: "Backend as a Service API Documentation",
+        version: "0.0.1",
+        contact: {
+          name: "Calmsey BaaS",
+          email: "wisnuvb@gmail.com",
+        },
+      },
+      servers: [
+        {
+          url: `http://localhost:${PORT}`,
+          description: "Development server",
+        },
+        {
+          url: process.env.API_URL || "https://api.calmsey.com",
+          description: "Production server",
+        },
+      ],
+      tags: [
+        { name: "auth", description: "Authentication endpoints" },
+        { name: "projects", description: "Project management" },
+        { name: "collections", description: "Collection management" },
+        { name: "data", description: "Dynamic data API" },
+        { name: "upload", description: "File upload endpoints" },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+          apiKeyAuth: {
+            type: "apiKey",
+            name: "X-API-Key",
+            in: "header",
+          },
+        },
+      },
+    },
+  });
+
+  // Swagger UI
+  await fastify.register(swaggerUi, {
+    routePrefix: "/docs",
+    uiConfig: {
+      docExpansion: "list",
+      deepLinking: false,
+    },
+    uiHooks: {
+      onRequest: function (request, reply, next) {
+        next();
+      },
+      preHandler: function (request, reply, next) {
+        next();
+      },
+    },
+    staticCSP: true,
+    transformStaticCSP: (header) => header,
+    transformSpecification: (swaggerObject, request, reply) => {
+      return swaggerObject;
+    },
+    transformSpecificationClone: true,
+  });
+
+  // Rate Limiting (register early, before other plugins)
+  await registerRateLimit(fastify);
+
   // JWT
   await fastify.register(jwt, {
     secret: process.env.JWT_SECRET || "supersecretkey",
+    sign: {
+      expiresIn: process.env.JWT_EXPIRY || "24h", // Default 24 hours
+    },
   });
 
   // Multipart for file uploads
@@ -74,7 +194,9 @@ async function start() {
     
     📍 URL: http://localhost:${PORT}
     🏥 Health: http://localhost:${PORT}/health
-    📚 Environment: ${process.env.NODE_ENV || "development"}
+    📚 API Docs: http://localhost:${PORT}/docs
+    📖 OpenAPI JSON: http://localhost:${PORT}/docs/json
+    🌍 Environment: ${process.env.NODE_ENV || "development"}
     `);
   } catch (err) {
     fastify.log.error(err);
