@@ -11,6 +11,9 @@ import { projectRoutes } from "./routes/project.routes";
 import { collectionRoutes } from "./routes/collection.routes";
 import { dynamicApiRoutes } from "./routes/dynamic-api.routes";
 import { uploadRoutes } from "./routes/upload.routes";
+import { dashboardRoutes } from "./routes/dashboard.routes";
+import { webhookRoutes } from "./routes/webhook.routes";
+import { emailRoutes } from "./routes/email.routes";
 import { registerRateLimit } from "./middleware/rate-limit.middleware";
 
 // Load environment variables
@@ -104,6 +107,9 @@ async function registerPlugins() {
         { name: "collections", description: "Collection management" },
         { name: "data", description: "Dynamic data API" },
         { name: "upload", description: "File upload endpoints" },
+        { name: "dashboard", description: "Dashboard statistics and aggregations" },
+        { name: "webhooks", description: "Webhook management" },
+        { name: "email", description: "Email service" },
       ],
       components: {
         securitySchemes: {
@@ -176,6 +182,9 @@ async function registerRoutes() {
   await fastify.register(projectRoutes, { prefix: "/api/projects" });
   await fastify.register(collectionRoutes, { prefix: "/api/collections" });
   await fastify.register(uploadRoutes, { prefix: "/api/upload" });
+  await fastify.register(webhookRoutes, { prefix: "/api" });
+  await fastify.register(emailRoutes, { prefix: "/api" });
+  await fastify.register(dashboardRoutes, { prefix: "/api/dashboard" });
 
   // Dynamic API routes (per project)
   await fastify.register(dynamicApiRoutes, { prefix: "/api/data" });
