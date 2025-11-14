@@ -8,23 +8,27 @@ export default function HelpPage() {
   const [activeTab, setActiveTab] = useState<string>("overview");
 
   const sections = [
-    { id: "overview", title: "📚 Overview", icon: "📚" },
-    { id: "collections", title: "🗂️ Collections & Schema", icon: "🗂️" },
-    { id: "relations", title: "🔗 Relations", icon: "🔗" },
-    { id: "transactions", title: "⚛️ Transactions", icon: "⚛️" },
-    { id: "webhooks", title: "🔔 Webhooks", icon: "🔔" },
-    { id: "email", title: "📧 Email Service", icon: "📧" },
-    { id: "realtime", title: "🔄 Real-time", icon: "🔄" },
-    { id: "multidb", title: "🗄️ Multi-Database", icon: "🗄️" },
-    { id: "audit", title: "📝 Audit Logs", icon: "📝" },
+    { id: "overview", title: "Overview", icon: "📚" },
+    { id: "collections", title: "Collections & Schema", icon: "🗂️" },
+    { id: "relations", title: "Relations", icon: "🔗" },
+    { id: "transactions", title: "Transactions", icon: "⚛️" },
+    { id: "webhooks", title: "Webhooks", icon: "🔔" },
+    { id: "email", title: "Email Service", icon: "📧" },
+    { id: "realtime", title: "Real-time", icon: "🔄" },
+    { id: "multidb", title: "Multi-Database", icon: "🗄️" },
+    { id: "audit", title: "Audit Logs", icon: "📝" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Documentation & Help</h1>
-          <p className="mt-1 text-gray-600">Complete guide to Calmsey BaaS features</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Documentation & Help
+          </h1>
+          <p className="mt-1 text-gray-600">
+            Complete guide to Calmsey BaaS features
+          </p>
         </div>
         <Button variant="outline" onClick={() => navigate(-1)}>
           ← Back
@@ -60,52 +64,76 @@ export default function HelpPage() {
               <div className="prose max-w-none">
                 <h2>🚀 Welcome to Calmsey BaaS</h2>
                 <p>
-                  Calmsey BaaS adalah Backend as a Service platform yang memungkinkan Anda membuat REST API secara
-                  dinamis. Platform ini sudah dilengkapi dengan fitur-fitur enterprise-grade.
+                  Calmsey BaaS is Backend as a Service platform that allows you
+                  to create REST API dynamically based on the defined schema.
+                  This platform is already equipped with enterprise-grade
+                  features.
                 </p>
 
-                <h3>✨ Fitur Utama</h3>
+                <h3>✨ Main Features</h3>
                 <div className="grid grid-cols-2 gap-4 my-4">
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">🗂️ Dynamic API Generation</h4>
-                    <p className="text-sm">Buat REST API otomatis dari schema JSON</p>
+                    <h4 className="font-semibold mb-2">
+                      Dynamic API Generation
+                    </h4>
+                    <p className="text-sm">
+                      Create REST API automatically from JSON schema
+                    </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">🔗 Relations</h4>
-                    <p className="text-sm">One-to-One, One-to-Many, Many-to-Many</p>
+                    <h4 className="font-semibold mb-2">Relations</h4>
+                    <p className="text-sm">
+                      One-to-One, One-to-Many, Many-to-Many relations
+                    </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">⚛️ Transactions</h4>
-                    <p className="text-sm">Atomic operations untuk data consistency</p>
+                    <h4 className="font-semibold mb-2">Transactions</h4>
+                    <p className="text-sm">
+                      Atomic operations for data consistency
+                    </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">📝 Audit Logging</h4>
-                    <p className="text-sm">Track semua perubahan data</p>
+                    <h4 className="font-semibold mb-2">Audit Logging</h4>
+                    <p className="text-sm">Track all data changes</p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">🗄️ Multi-Database</h4>
-                    <p className="text-sm">Dedicated database per project</p>
+                    <h4 className="font-semibold mb-2">Multi-Database</h4>
+                    <p className="text-sm">
+                      Dedicated database per project for true tenant isolation,
+                      scalability, and compliance
+                    </p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">🔄 Real-time</h4>
+                    <h4 className="font-semibold mb-2">Real-time</h4>
                     <p className="text-sm">WebSocket subscriptions</p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">🔔 Webhooks</h4>
+                    <h4 className="font-semibold mb-2">Webhooks</h4>
                     <p className="text-sm">Event-driven integrations</p>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">📧 Email Service</h4>
-                    <p className="text-sm">Transactional emails dengan queue</p>
+                    <h4 className="font-semibold mb-2">Email Service</h4>
+                    <p className="text-sm">Transactional emails with queue</p>
                   </div>
                 </div>
 
                 <h3>🎯 Quick Start</h3>
                 <ol>
-                  <li><strong>Create Project</strong> - Mulai dengan membuat project baru</li>
-                  <li><strong>Define Collection</strong> - Buat schema untuk data Anda</li>
-                  <li><strong>Get API Key</strong> - Copy API key dari project settings</li>
-                  <li><strong>Use API</strong> - Mulai CRUD data via REST API</li>
+                  <li>
+                    <strong>Create Project</strong> - Start by creating a new
+                    project
+                  </li>
+                  <li>
+                    <strong>Define Collection</strong> - Create schema for your
+                    data
+                  </li>
+                  <li>
+                    <strong>Get API Key</strong> - Copy API key from project
+                    settings
+                  </li>
+                  <li>
+                    <strong>Use API</strong> - Start CRUD data via REST API
+                  </li>
                 </ol>
               </div>
             )}
@@ -113,7 +141,10 @@ export default function HelpPage() {
             {activeTab === "collections" && (
               <div className="prose max-w-none">
                 <h2>🗂️ Collections & Schema</h2>
-                <p>Collections adalah table definitions yang mendefinisikan struktur data Anda.</p>
+                <p>
+                  Collections are table definitions that define your data
+                  structure.
+                </p>
 
                 <h3>Field Types</h3>
                 <table className="min-w-full">
@@ -125,23 +156,89 @@ export default function HelpPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td><code>string</code></td><td>Short text</td><td>VARCHAR(255)</td></tr>
-                    <tr><td><code>text</code></td><td>Long text</td><td>TEXT</td></tr>
-                    <tr><td><code>number</code></td><td>Numeric value</td><td>NUMERIC</td></tr>
-                    <tr><td><code>boolean</code></td><td>True/False</td><td>BOOLEAN</td></tr>
-                    <tr><td><code>date</code></td><td>Date only</td><td>DATE</td></tr>
-                    <tr><td><code>datetime</code></td><td>Date & time</td><td>TIMESTAMP</td></tr>
-                    <tr><td><code>email</code></td><td>Email with validation</td><td>VARCHAR(255)</td></tr>
-                    <tr><td><code>url</code></td><td>URL with validation</td><td>VARCHAR(500)</td></tr>
-                    <tr><td><code>json</code></td><td>JSON object</td><td>JSONB</td></tr>
-                    <tr><td><code>relation</code></td><td>Foreign key</td><td>VARCHAR(255)</td></tr>
-                    <tr><td><code>file</code></td><td>File path</td><td>VARCHAR(500)</td></tr>
+                    <tr>
+                      <td>
+                        <code>string</code>
+                      </td>
+                      <td>Short text</td>
+                      <td>VARCHAR(255)</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>text</code>
+                      </td>
+                      <td>Long text</td>
+                      <td>TEXT</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>number</code>
+                      </td>
+                      <td>Numeric value</td>
+                      <td>NUMERIC</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>boolean</code>
+                      </td>
+                      <td>True/False</td>
+                      <td>BOOLEAN</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>date</code>
+                      </td>
+                      <td>Date only</td>
+                      <td>DATE</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>datetime</code>
+                      </td>
+                      <td>Date & time</td>
+                      <td>TIMESTAMP</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>email</code>
+                      </td>
+                      <td>Email with validation</td>
+                      <td>VARCHAR(255)</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>url</code>
+                      </td>
+                      <td>URL with validation</td>
+                      <td>VARCHAR(500)</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>json</code>
+                      </td>
+                      <td>JSON object</td>
+                      <td>JSONB</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>relation</code>
+                      </td>
+                      <td>Foreign key</td>
+                      <td>VARCHAR(255)</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>file</code>
+                      </td>
+                      <td>File path</td>
+                      <td>VARCHAR(500)</td>
+                    </tr>
                   </tbody>
                 </table>
 
                 <h3>Schema Example</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-{`{
+                  {`{
   "fields": [
     {
       "name": "name",
@@ -180,7 +277,8 @@ export default function HelpPage() {
               <div className="prose max-w-none">
                 <h2>🔗 Relations (Foreign Keys)</h2>
                 <p>
-                  Calmsey BaaS mendukung relasi antar collections, memungkinkan Anda membuat hubungan data yang kompleks.
+                  Calmsey BaaS supports relations between collections, allowing
+                  you to create complex data relationships.
                 </p>
 
                 <h3>Types of Relations</h3>
@@ -188,10 +286,15 @@ export default function HelpPage() {
                 <div className="space-y-6 my-6">
                   <div className="border border-gray-200 rounded-lg p-4">
                     <h4 className="font-semibold mb-2">1. One-to-One (1:1)</h4>
-                    <p className="text-sm mb-3">Satu record di collection A berhubungan dengan satu record di collection B.</p>
-                    <p className="text-xs text-gray-600">Example: User has one Profile</p>
+                    <p className="text-sm mb-3">
+                      One record in collection A is related to one record in
+                      collection B.
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Example: User has one Profile
+                    </p>
                     <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs mt-2">
-{`{
+                      {`{
   "name": "profileId",
   "type": "relation",
   "relation": {
@@ -204,10 +307,15 @@ export default function HelpPage() {
 
                   <div className="border border-gray-200 rounded-lg p-4">
                     <h4 className="font-semibold mb-2">2. One-to-Many (1:M)</h4>
-                    <p className="text-sm mb-3">Satu record di collection A berhubungan dengan banyak record di collection B.</p>
-                    <p className="text-xs text-gray-600">Example: Customer has many Orders</p>
+                    <p className="text-sm mb-3">
+                      One record in collection A is related to many records in
+                      collection B.
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Example: Customer has many Orders
+                    </p>
                     <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs mt-2">
-{`// In Orders collection:
+                      {`// In Orders collection:
 {
   "name": "customerId",
   "type": "relation",
@@ -220,11 +328,18 @@ export default function HelpPage() {
                   </div>
 
                   <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold mb-2">3. Many-to-Many (M:N)</h4>
-                    <p className="text-sm mb-3">Banyak record di collection A berhubungan dengan banyak record di collection B.</p>
-                    <p className="text-xs text-gray-600">Example: Post has many Tags, Tag has many Posts</p>
+                    <h4 className="font-semibold mb-2">
+                      3. Many-to-Many (M:N)
+                    </h4>
+                    <p className="text-sm mb-3">
+                      Many records in collection A are related to many records
+                      in collection B.
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Example: Post has many Tags, Tag has many Posts
+                    </p>
                     <pre className="bg-gray-900 text-gray-100 p-3 rounded text-xs mt-2">
-{`// In Posts collection:
+                      {`// In Posts collection:
 {
   "name": "tags",
   "type": "relation",
@@ -241,7 +356,7 @@ export default function HelpPage() {
 
                 <h3>Using Relations in API</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
-{`// Create with relation
+                  {`// Create with relation
 POST /api/data/my-project/orders
 {
   "customerName": "John Doe",
@@ -270,24 +385,32 @@ GET /api/data/my-project/orders?populate=customerId
               <div className="prose max-w-none">
                 <h2>⚛️ Transactions</h2>
                 <p>
-                  Transactions memastikan multiple operations dieksekusi secara atomic - semua berhasil atau semua gagal.
-                  <strong>Critical untuk financial operations, inventory management, dan complex workflows.</strong>
+                  Transactions memastikan multiple operations dieksekusi secara
+                  atomic - semua berhasil atau semua gagal.
+                  <strong>
+                    Critical untuk financial operations, inventory management,
+                    dan complex workflows.
+                  </strong>
                 </p>
 
                 <h3>Why Use Transactions?</h3>
                 <div className="bg-red-50 border border-red-200 p-4 rounded-lg my-4">
-                  <h4 className="text-red-900 font-semibold mb-2">❌ Without Transaction (DANGEROUS)</h4>
+                  <h4 className="text-red-900 font-semibold mb-2">
+                    ❌ Without Transaction (DANGEROUS)
+                  </h4>
                   <pre className="text-xs bg-red-900 text-white p-2 rounded">
-{`1. Deduct $100 from Account A  ✅ Success
+                    {`1. Deduct $100 from Account A  ✅ Success
 2. Add $100 to Account B       ❌ FAILED!
 → Money lost! Account A -$100, Account B +$0`}
                   </pre>
                 </div>
 
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg my-4">
-                  <h4 className="text-green-900 font-semibold mb-2">✅ With Transaction (SAFE)</h4>
+                  <h4 className="text-green-900 font-semibold mb-2">
+                    ✅ With Transaction (SAFE)
+                  </h4>
                   <pre className="text-xs bg-green-900 text-white p-2 rounded">
-{`Transaction Start:
+                    {`Transaction Start:
 1. Deduct $100 from Account A  ✅ Success
 2. Add $100 to Account B       ❌ FAILED!
 Transaction Rollback → Both operations cancelled
@@ -298,14 +421,20 @@ Transaction Rollback → Both operations cancelled
                 <h3>Use Cases</h3>
                 <ul>
                   <li>💰 Financial transfers (deduct + add)</li>
-                  <li>🛒 E-commerce orders (create order + reduce inventory + create invoice)</li>
-                  <li>📝 Multi-step workflows (approval + notification + status update)</li>
+                  <li>
+                    🛒 E-commerce orders (create order + reduce inventory +
+                    create invoice)
+                  </li>
+                  <li>
+                    📝 Multi-step workflows (approval + notification + status
+                    update)
+                  </li>
                   <li>🔄 Data migrations</li>
                 </ul>
 
                 <h3>API Usage</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
-{`// Coming soon: Transaction API endpoint
+                  {`// Coming soon: Transaction API endpoint
 // For now, use via backend service
 
 import { DynamicQueryBuilder } from './lib/dynamic-query-builder';
@@ -324,8 +453,9 @@ await queryBuilder.executeTransaction([
               <div className="prose max-w-none">
                 <h2>🔔 Webhooks</h2>
                 <p>
-                  Webhooks adalah HTTP callbacks yang dipanggil otomatis saat ada event tertentu (create, update, delete).
-                  Perfect untuk integrasi dengan sistem lain.
+                  Webhooks are HTTP callbacks that are called automatically when
+                  a specific event occurs (create, update, delete). Perfect for
+                  integration with other systems.
                 </p>
 
                 <h3>Setup Webhook</h3>
@@ -338,7 +468,7 @@ await queryBuilder.executeTransaction([
 
                 <h3>Webhook Payload</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
-{`{
+                  {`{
   "event": "onCreate",
   "collection": "orders",
   "action": "create",
@@ -354,7 +484,7 @@ await queryBuilder.executeTransaction([
 
                 <h3>Verifying Signature</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs">
-{`// Node.js example
+                  {`// Node.js example
 const crypto = require('crypto');
 
 function verifyWebhook(payload, signature, secret) {
@@ -379,7 +509,10 @@ app.post('/webhooks', (req, res) => {
             {activeTab === "email" && (
               <div className="prose max-w-none">
                 <h2>📧 Email Service</h2>
-                <p>Send transactional emails with support for multiple providers (SMTP, SendGrid, Mailgun, AWS SES).</p>
+                <p>
+                  Send transactional emails with support for multiple providers
+                  (SMTP, SendGrid, Mailgun, AWS SES).
+                </p>
 
                 <h3>Configure Email Provider</h3>
                 <ol>
@@ -391,7 +524,7 @@ app.post('/webhooks', (req, res) => {
 
                 <h3>Send Email API</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
-{`POST /api/projects/:projectId/email/send
+                  {`POST /api/projects/:projectId/email/send
 Authorization: Bearer YOUR_JWT
 
 {
@@ -404,10 +537,10 @@ Authorization: Bearer YOUR_JWT
 
                 <h3>Using Templates</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
-{`{
+                  {`{
   "to": "customer@example.com",
   "subject": "Order #{{orderNumber}}",
-  "template": "<h1>Order {{orderNumber}}</h1><p>Total: ${{total}}</p>",
+  "template": "<h1>Order {{orderNumber}}</h1><p>Total: ${{ total }}</p>",
   "templateData": {
     "orderNumber": "ORD-123",
     "total": "150.00"
@@ -420,11 +553,14 @@ Authorization: Bearer YOUR_JWT
             {activeTab === "realtime" && (
               <div className="prose max-w-none">
                 <h2>🔄 Real-time Subscriptions</h2>
-                <p>Get live updates when data changes using WebSocket connections. Perfect for dashboards, chat, collaborative apps.</p>
+                <p>
+                  Get live updates when data changes using WebSocket
+                  connections. Perfect for dashboards, chat, collaborative apps.
+                </p>
 
                 <h3>Connect to WebSocket</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
-{`const ws = new WebSocket('ws://localhost:3000/ws');
+                  {`const ws = new WebSocket('ws://localhost:3000/ws');
 
 ws.onopen = () => {
   // Subscribe to project updates
@@ -451,16 +587,34 @@ ws.onmessage = (event) => {
 
                 <h3>Room Patterns</h3>
                 <ul>
-                  <li><code>project:&#123;id&#125;</code> - All project events</li>
-                  <li><code>project:&#123;id&#125;:collection:&#123;slug&#125;</code> - Collection-specific</li>
-                  <li><code>project:&#123;id&#125;:collection:&#123;slug&#125;:record:&#123;id&#125;</code> - Record-specific</li>
+                  <li>
+                    <code>project:&#123;id&#125;</code> - All project events
+                  </li>
+                  <li>
+                    <code>
+                      project:&#123;id&#125;:collection:&#123;slug&#125;
+                    </code>{" "}
+                    - Collection-specific
+                  </li>
+                  <li>
+                    <code>
+                      project:&#123;id&#125;:collection:&#123;slug&#125;:record:&#123;id&#125;
+                    </code>{" "}
+                    - Record-specific
+                  </li>
                 </ul>
 
                 <h3>Events</h3>
                 <ul>
-                  <li><code>data:create</code> - New record created</li>
-                  <li><code>data:update</code> - Record updated</li>
-                  <li><code>data:delete</code> - Record deleted</li>
+                  <li>
+                    <code>data:create</code> - New record created
+                  </li>
+                  <li>
+                    <code>data:update</code> - Record updated
+                  </li>
+                  <li>
+                    <code>data:delete</code> - Record deleted
+                  </li>
                 </ul>
               </div>
             )}
@@ -469,35 +623,63 @@ ws.onmessage = (event) => {
               <div className="prose max-w-none">
                 <h2>🗄️ Multi-Database Architecture</h2>
                 <p>
-                  Setiap project bisa memiliki database terpisah untuk true tenant isolation, scalability, dan compliance.
+                  Each project can have a separate database for true tenant
+                  isolation, scalability, and compliance.
                 </p>
 
                 <h3>Benefits</h3>
                 <ul>
-                  <li>🔒 <strong>True Isolation</strong> - Data completely separated</li>
-                  <li>🌍 <strong>Geo-distribution</strong> - Database in different regions</li>
-                  <li>📈 <strong>Scalability</strong> - Horizontal scaling per project</li>
-                  <li>✅ <strong>Compliance</strong> - Meet data residency requirements</li>
+                  <li>
+                    🔒 <strong>True Isolation</strong> - Data completely
+                    separated
+                  </li>
+                  <li>
+                    🌍 <strong>Geo-distribution</strong> - Database in different
+                    regions
+                  </li>
+                  <li>
+                    📈 <strong>Scalability</strong> - Horizontal scaling per
+                    project
+                  </li>
+                  <li>
+                    ✅ <strong>Compliance</strong> - Meet data residency
+                    requirements
+                  </li>
                 </ul>
 
                 <h3>Options</h3>
                 <div className="space-y-4 my-4">
                   <div className="border p-4 rounded-lg">
-                    <h4 className="font-semibold">Option 1: Shared Database (Default)</h4>
-                    <p className="text-sm">All projects share same database. Simple, cost-effective.</p>
+                    <h4 className="font-semibold">
+                      Option 1: Shared Database (Default)
+                    </h4>
+                    <p className="text-sm">
+                      All projects share same database. Simple, cost-effective.
+                    </p>
                   </div>
                   <div className="border p-4 rounded-lg">
-                    <h4 className="font-semibold">Option 2: Dedicated DB (Same Server)</h4>
-                    <p className="text-sm">Separate database on same server. Better isolation, easy migration.</p>
+                    <h4 className="font-semibold">
+                      Option 2: Dedicated DB (Same Server)
+                    </h4>
+                    <p className="text-sm">
+                      Separate database on same server. Better isolation, easy
+                      migration.
+                    </p>
                   </div>
                   <div className="border p-4 rounded-lg">
-                    <h4 className="font-semibold">Option 3: Custom Database Server</h4>
-                    <p className="text-sm">Connect to external database. Full control, geo-distribution.</p>
+                    <h4 className="font-semibold">
+                      Option 3: Custom Database Server
+                    </h4>
+                    <p className="text-sm">
+                      Connect to external database. Full control,
+                      geo-distribution.
+                    </p>
                   </div>
                 </div>
 
                 <p className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                  💡 <strong>Tip:</strong> Enable "Use Dedicated Database" when creating project for enterprise deployments.
+                  💡 <strong>Tip:</strong> Enable "Use Dedicated Database" when
+                  creating project for enterprise deployments.
                 </p>
               </div>
             )}
@@ -506,18 +688,20 @@ ws.onmessage = (event) => {
               <div className="prose max-w-none">
                 <h2>📝 Audit Logs</h2>
                 <p>
-                  Track semua perubahan data untuk compliance, security, dan debugging. Automatic logging of WHO changed WHAT WHEN.
+                  Track all data changes for compliance, security, and
+                  debugging. debugging. Automatic logging of WHO changed WHAT
+                  WHEN.
                 </p>
 
                 <h3>What's Logged</h3>
                 <ul>
-                  <li>👤 User/API Key yang melakukan perubahan</li>
+                  <li>👤 User/API Key that made the change</li>
                   <li>🎯 Action (CREATE, UPDATE, DELETE)</li>
                   <li>📄 Old & New data snapshots</li>
                   <li>🔄 Changed fields</li>
                   <li>🌐 IP address & User agent</li>
                   <li>⏰ Timestamp</li>
-                  <li>🔗 Transaction ID (untuk grouped operations)</li>
+                  <li>🔗 Transaction ID (for grouped operations)</li>
                 </ul>
 
                 <h3>View Audit Logs</h3>
@@ -525,7 +709,7 @@ ws.onmessage = (event) => {
 
                 <h3>Query Audit Logs API</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
-{`GET /api/projects/:projectId/audit-logs?
+                  {`GET /api/projects/:projectId/audit-logs?
   page=1&
   limit=50&
   userId=user-123&

@@ -102,7 +102,7 @@ export default function DashboardPage() {
       {/* Recent Projects */}
       <Card title="Recent Projects">
         {projects.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 flex flex-col items-center justify-center">
             <p className="text-gray-500 mb-4">No projects yet</p>
             <Link to="/projects">
               <Button>Create Your First Project</Button>
