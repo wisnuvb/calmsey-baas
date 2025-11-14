@@ -22,9 +22,13 @@ import {
   RefreshCw,
   Download,
   Upload,
+  CopyIcon,
 } from "lucide-react";
 import React from "react";
-import { generatePayloadFromFields } from "../lib/random-generator";
+import {
+  generatePayloadFromFields,
+  generateRandomValue,
+} from "../lib/random-generator";
 
 type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 type ApiEndpoint = {
@@ -51,12 +55,36 @@ export default function CollectionDetailPage() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [itemId, setItemId] = useState<string>("");
   const [queryParams, setQueryParams] = useState<Record<string, string>>({});
+  const [bodyType, setBodyType] = useState<"raw" | "form-data">("raw");
 
   useEffect(() => {
     if (id) {
       fetchCollection();
     }
   }, [id]);
+
+  // Auto-generate payload when endpoint changes
+  useEffect(() => {
+    if (
+      selectedEndpoint &&
+      collection &&
+      (selectedEndpoint.method === "POST" ||
+        selectedEndpoint.method === "PATCH")
+    ) {
+      const payload = getExamplePayload(
+        selectedEndpoint.method,
+        selectedEndpoint
+      );
+      setRequestPayload(payload);
+    } else if (
+      selectedEndpoint &&
+      (selectedEndpoint.method === "GET" ||
+        selectedEndpoint.method === "DELETE")
+    ) {
+      setRequestPayload("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEndpoint, collection]);
 
   const fetchCollection = async () => {
     if (!id) return;
@@ -135,7 +163,6 @@ export default function CollectionDetailPage() {
         "search",
         "filter",
         "populate",
-        "fields",
       ],
     },
     {
@@ -223,36 +250,61 @@ export default function CollectionDetailPage() {
     const schema = collection.schema as any;
     const fields = schema?.fields || [];
 
+    // Helper to generate payload with all fields except id and datetime fields
+    const generateFullPayload = () => {
+      const payload: Record<string, any> = {};
+      fields.forEach((field: FieldDefinition) => {
+        // Skip id and datetime fields
+        if (
+          field.name === "id" ||
+          field.name === "createdAt" ||
+          field.name === "updatedAt" ||
+          field.name === "deletedAt"
+        ) {
+          return;
+        }
+        // Include all other fields
+        payload[field.name] = generateRandomValue(field);
+      });
+      return payload;
+    };
+
     if (method === "POST") {
       if (endpoint?.path.includes("bulk")) {
-        // Bulk create payload
-        const includeOptional = false;
-        const payload1 = generatePayloadFromFields(fields, includeOptional);
-        const payload2 = generatePayloadFromFields(fields, includeOptional);
+        // Bulk create payload - include all fields except id and datetime
+        const payload1 = generateFullPayload();
+        const payload2 = generateFullPayload();
         return JSON.stringify({ data: [payload1, payload2] }, null, 2);
       } else {
-        // Single create
-        const includeOptional = false;
-        const payload = generatePayloadFromFields(fields, includeOptional);
+        // Single create - include all fields except id and datetime
+        const payload = generateFullPayload();
         return JSON.stringify(payload, null, 2);
       }
     }
 
     if (method === "PATCH") {
       if (endpoint?.path.includes("bulk")) {
-        // Bulk update payload
+        // Bulk update payload - show example with where clause and partial data
+        const samplePayload = generateFullPayload();
+        // Take first 2-3 fields as example update data
+        const updateData: Record<string, any> = {};
+        const keys = Object.keys(samplePayload);
+        if (keys.length > 0) {
+          // Use first field as example
+          updateData[keys[0]] = samplePayload[keys[0]];
+        }
+
         return JSON.stringify(
           {
             where: { status: "pending" },
-            data: { status: "active", updatedAt: new Date().toISOString() },
+            data: updateData,
           },
           null,
           2
         );
       } else {
-        // Single update
-        const includeOptional = true;
-        const payload = generatePayloadFromFields(fields, includeOptional);
+        // Single update - include all fields except id and datetime
+        const payload = generateFullPayload();
         return JSON.stringify(payload, null, 2);
       }
     }
@@ -623,7 +675,7 @@ export default function CollectionDetailPage() {
             <h3 className="font-semibold text-gray-900 mb-4">
               Available Endpoints
             </h3>
-            <div className="space-y-2 max-h-screen overflow-y-auto">
+            <div className="space-y-2">
               {endpoints.map((endpoint, idx) => (
                 <div
                   key={idx}
@@ -663,9 +715,19 @@ export default function CollectionDetailPage() {
                     >
                       {endpoint.method}
                     </span>
-                    <code className="text-sm font-mono text-gray-800 flex-1">
-                      {endpoint.path}
-                    </code>
+                    <div className="flex items-start gap-2">
+                      <code className="text-sm font-mono text-gray-800 flex-1 break-all">
+                        {endpoint.path}
+                      </code>
+                      <CopyIcon
+                        className="w-4 h-4"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          copyToClipboard(endpoint.path);
+                        }}
+                      />
+                    </div>
                   </div>
                   <p className="text-xs text-gray-600">
                     {endpoint.description}
@@ -811,7 +873,7 @@ export default function CollectionDetailPage() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-medium text-gray-700">
-                        Request Payload (JSON)
+                        Body
                       </label>
                       <Button
                         size="sm"
@@ -825,16 +887,71 @@ export default function CollectionDetailPage() {
                         }}
                       >
                         <RefreshCw className="w-4 h-4 mr-1" />
-                        Regenerate
+                        Generate Example
                       </Button>
                     </div>
+
+                    {/* Body Type Tabs (like Postman) */}
+                    <div className="flex border-b border-gray-200 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setBodyType("raw")}
+                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                          bodyType === "raw"
+                            ? "border-blue-500 text-blue-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700"
+                        }`}
+                      >
+                        raw
+                      </button>
+                    </div>
+
+                    {/* JSON Format Indicator */}
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value="json"
+                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
+                          disabled
+                        >
+                          <option value="json">JSON</option>
+                        </select>
+                        <span className="text-xs text-gray-500">
+                          All fields included (except id, createdAt, updatedAt,
+                          deletedAt)
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          try {
+                            const parsed = JSON.parse(requestPayload);
+                            setRequestPayload(JSON.stringify(parsed, null, 2));
+                          } catch (e) {
+                            alert("Invalid JSON format");
+                          }
+                        }}
+                        className="text-xs"
+                      >
+                        Format JSON
+                      </Button>
+                    </div>
+
                     <textarea
                       value={requestPayload}
                       onChange={(e) => setRequestPayload(e.target.value)}
-                      rows={10}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter JSON payload"
+                      rows={12}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 resize-y"
+                      placeholder='{\n  "field1": "value1",\n  "field2": "value2"\n}'
+                      spellCheck={false}
                     />
+
+                    {/* Helper text */}
+                    <p className="mt-2 text-xs text-gray-500">
+                      💡 Tip: Click "Generate Example" to auto-fill all
+                      collection fields
+                    </p>
                   </div>
                 )}
 
@@ -854,9 +971,9 @@ export default function CollectionDetailPage() {
                       Response
                     </label>
                     <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto max-h-96">
-                      <div className="mb-2 flex items-center justify-between">
+                      <div className="mb-2 flex items-center justify-between gap-2">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                          className={`px-2 py-1 rounded text-xs font-semibold shrink-0 ${
                             response.status >= 200 && response.status < 300
                               ? "bg-green-600"
                               : "bg-red-600"

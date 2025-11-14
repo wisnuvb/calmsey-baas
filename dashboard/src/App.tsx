@@ -8,6 +8,7 @@ import CollectionsPage from "./pages/CollectionsPage";
 import CollectionDetailPage from "./pages/CollectionDetailPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import HelpPage from "./pages/HelpPage";
+import ProjectSettingsPage from "./pages/ProjectSettingsPage";
 import DashboardLayout from "./components/DashboardLayout";
 import React, { Fragment } from "react";
 
@@ -33,6 +34,7 @@ function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:id/settings" element={<ProjectSettingsPage />} />
         <Route path="collections" element={<CollectionsPage />} />
         <Route path="collections/:id" element={<CollectionDetailPage />} />
         <Route path="api-keys" element={<ApiKeysPage />} />

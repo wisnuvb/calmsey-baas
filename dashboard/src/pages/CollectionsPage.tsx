@@ -335,7 +335,7 @@ export default function CollectionsPage() {
       {/* Collections Grid */}
       {collections.length === 0 ? (
         <Card>
-          <div className="text-center py-12">
+          <div className="text-center py-12 flex flex-col items-center justify-center">
             <Database className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-4">No collections yet</p>
             <Button

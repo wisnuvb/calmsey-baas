@@ -13,12 +13,32 @@ export interface Project {
   description: string | null;
   createdAt: string;
   updatedAt: string;
+  useDedicatedDb?: boolean;
+  dbHost?: string | null;
+  dbPort?: number | null;
+  dbName?: string | null;
+  dbUser?: string | null;
+  dbStatus?: string;
   collections?: Collection[];
   apiKeys?: ApiKey[];
+  settings?: ProjectSettings;
   _count?: {
     collections: number;
     apiKeys: number;
   };
+}
+
+export interface ProjectSettings {
+  id: string;
+  emailEnabled: boolean;
+  emailProvider: string | null;
+  emailConfig?: Record<string, any> | null;
+  storageType: string;
+  storageConfig?: Record<string, any> | null;
+  authEnabled: boolean;
+  jwtExpiry: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Collection {
