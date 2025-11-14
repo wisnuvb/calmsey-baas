@@ -5,6 +5,7 @@ import { Collection, Project, ApiResponse, FieldDefinition } from "../types";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
 import { formatDate } from "../lib/utils";
 import React from "react";
 import { X, Copy, ExternalLink, Database, Code, Settings } from "lucide-react";
@@ -30,10 +31,11 @@ const RELATION_TYPES = [
 ];
 
 export default function CollectionsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const projectId = searchParams.get("projectId");
   const navigate = useNavigate();
 
+  const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,11 +64,28 @@ export default function CollectionsPage() {
   const [showRelationConfig, setShowRelationConfig] = useState(false);
 
   useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
     if (projectId) {
       fetchProject();
       fetchCollections();
+    } else {
+      setLoading(false);
     }
   }, [projectId]);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await api.get<ApiResponse<Project[]>>("/projects");
+      if (response.data.success && response.data.data) {
+        setProjects(response.data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch projects:", error);
+    }
+  };
 
   const fetchProject = async () => {
     if (!projectId) return;
@@ -271,14 +290,93 @@ export default function CollectionsPage() {
     (c) => !editingCollection || c.id !== editingCollection.id
   );
 
+  const handleProjectSelect = (selectedProjectId: string) => {
+    setSearchParams({ projectId: selectedProjectId });
+  };
+
   if (!projectId) {
     return (
-      <Card>
-        <div className="text-center py-12 flex flex-col items-center justify-center">
-          <p className="text-gray-500 mb-4">Please select a project first</p>
-          <Button onClick={() => window.history.back()}>Go Back</Button>
-        </div>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <div className="text-center py-12 px-6">
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
+              <Database className="w-10 h-10 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Select a Project
+            </h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Choose a project to view and manage its collections, or create a new project to get started.
+            </p>
+
+            {projects.length === 0 ? (
+              <div className="space-y-4">
+                <p className="text-gray-500">No projects found</p>
+                <Button onClick={() => navigate("/projects")}>
+                  Create Your First Project
+                </Button>
+              </div>
+            ) : (
+              <div className="max-w-md mx-auto space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 text-left">
+                    Select Project
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    onChange={(e) => handleProjectSelect(e.target.value)}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Choose a project...
+                    </option>
+                    {projects.map((proj) => (
+                      <option key={proj.id} value={proj.id}>
+                        {proj.name} ({proj.slug})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-500 mb-3">
+                    Or create a new project
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/projects")}
+                  >
+                    Go to Projects
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Quick Info */}
+        <Card>
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl">💡</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                What are Collections?
+              </h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Collections are like database tables where you define the structure of your data. Each collection can have fields, relations, and constraints.
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>✓ Define custom fields and data types</li>
+                <li>✓ Set up relations between collections</li>
+                <li>✓ Auto-generated REST API endpoints</li>
+                <li>✓ Built-in timestamps and soft delete</li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+      </div>
     );
   }
 
@@ -498,13 +596,18 @@ export default function CollectionsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">
-              {editingCollection ? "Edit Collection" : "Create New Collection"}
-            </h2>
-            <form onSubmit={handleCreate} className="space-y-6">
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingCollection(null);
+          resetForm();
+        }}
+        title={editingCollection ? "Edit Collection" : "Create New Collection"}
+        size="2xl"
+      >
+        <div className="p-6">
+          <form onSubmit={handleCreate} className="space-y-6">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   {error}
@@ -796,7 +899,7 @@ export default function CollectionsPage() {
                 </label>
               </div>
 
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
                   variant="secondary"
@@ -810,13 +913,12 @@ export default function CollectionsPage() {
                   Cancel
                 </Button>
                 <Button type="submit" className="flex-1" isLoading={submitting}>
-                  {editingCollection ? "Update" : "Create"}
+                  {editingCollection ? "Update Collection" : "Create Collection"}
                 </Button>
               </div>
             </form>
-          </Card>
-        </div>
-      )}
+          </div>
+      </Modal>
     </div>
   );
 }
