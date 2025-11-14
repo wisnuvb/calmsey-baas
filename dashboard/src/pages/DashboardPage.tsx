@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false);
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalCollections: 0,
@@ -123,9 +124,7 @@ export default function DashboardPage() {
               <p className="text-3xl font-bold text-gray-900">
                 {stats.totalCollections}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
-                Database collections
-              </p>
+              <p className="text-xs text-gray-500 mt-2">Database collections</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
               <span className="text-2xl">🗂️</span>
@@ -136,9 +135,7 @@ export default function DashboardPage() {
         <Card className="hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-600 mb-1">
-                API Keys
-              </p>
+              <p className="text-sm font-medium text-gray-600 mb-1">API Keys</p>
               <p className="text-3xl font-bold text-gray-900">
                 {stats.totalApiKeys}
               </p>
@@ -152,7 +149,7 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        {/* <Card className="hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600 mb-1">
@@ -165,6 +162,41 @@ export default function DashboardPage() {
             </div>
             <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
               <span className="text-2xl">⚡</span>
+            </div>
+          </div>
+        </Card> */}
+        <Card className="hover:shadow-lg transition-shadow relative">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">Features</p>
+              <p className="text-3xl font-bold text-gray-900">15+</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Enterprise capabilities
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowFeaturesModal(true)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors group"
+                title="View all features"
+              >
+                <svg
+                  className="w-4 h-4 text-gray-600 group-hover:text-primary-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </button>
+              <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
+                <span className="text-2xl">⚡</span>
+              </div>
             </div>
           </div>
         </Card>
@@ -300,9 +332,7 @@ export default function DashboardPage() {
               <div className="flex items-start gap-3">
                 <span className="text-green-500 mt-0.5">✓</span>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Webhooks
-                  </p>
+                  <p className="text-sm font-medium text-gray-900">Webhooks</p>
                   <p className="text-xs text-gray-600">
                     Event-driven callbacks
                   </p>
@@ -550,6 +580,151 @@ export default function DashboardPage() {
           </div>
         </div>
       </Card>
+
+      {/* Features Modal */}
+      {showFeaturesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Enterprise Features
+              </h2>
+              <button
+                onClick={() => setShowFeaturesModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  name: "ACID Transactions",
+                  description:
+                    "Atomic database operations with rollback support",
+                  icon: "🔒",
+                },
+                {
+                  name: "Real-time Subscriptions",
+                  description: "WebSocket live updates for instant data sync",
+                  icon: "⚡",
+                },
+                {
+                  name: "Webhooks",
+                  description: "Event-driven callbacks for integrations",
+                  icon: "🔔",
+                },
+                {
+                  name: "Multi-Database",
+                  description: "Dedicated database per project",
+                  icon: "🗄️",
+                },
+                {
+                  name: "Audit Logging",
+                  description: "Complete trail of all operations",
+                  icon: "📝",
+                },
+                {
+                  name: "Dynamic API",
+                  description: "Auto-generated REST API from schema",
+                  icon: "🚀",
+                },
+                {
+                  name: "Relations & Populate",
+                  description: "One-to-one, one-to-many, many-to-many support",
+                  icon: "🔗",
+                },
+                {
+                  name: "Advanced Filtering",
+                  description: "Complex queries with operators ($gt, $in, etc)",
+                  icon: "🔍",
+                },
+                {
+                  name: "Bulk Operations",
+                  description: "Create, update, delete multiple records",
+                  icon: "📦",
+                },
+                {
+                  name: "Data Export/Import",
+                  description: "JSON, CSV, XLSX format support",
+                  icon: "📊",
+                },
+                {
+                  name: "Rate Limiting",
+                  description: "API throttling per API key",
+                  icon: "⏱️",
+                },
+                {
+                  name: "Soft Delete",
+                  description: "Optional soft delete with deletedAt",
+                  icon: "🗑️",
+                },
+                {
+                  name: "Auto Timestamps",
+                  description: "Automatic createdAt and updatedAt",
+                  icon: "⏰",
+                },
+                {
+                  name: "File Upload",
+                  description: "Local and S3 storage support",
+                  icon: "📁",
+                },
+                {
+                  name: "Schema Validation",
+                  description: "Automatic validation based on schema",
+                  icon: "✅",
+                },
+              ].map((feature, index) => (
+                <div
+                  key={index}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{feature.icon}</span>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">
+                        {feature.name}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex gap-3">
+                <Link to="/help" className="flex-1">
+                  <Button className="w-full" variant="outline">
+                    View Documentation
+                  </Button>
+                </Link>
+                <Button
+                  className="flex-1"
+                  onClick={() => setShowFeaturesModal(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

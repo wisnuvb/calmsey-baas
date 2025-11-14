@@ -306,7 +306,8 @@ export default function CollectionsPage() {
               Select a Project
             </h2>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Choose a project to view and manage its collections, or create a new project to get started.
+              Choose a project to view and manage its collections, or create a
+              new project to get started.
             </p>
 
             {projects.length === 0 ? (
@@ -338,7 +339,7 @@ export default function CollectionsPage() {
                   </select>
                 </div>
 
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-gray-200 flex flex-col items-center justify-center">
                   <p className="text-sm text-gray-500 mb-3">
                     Or create a new project
                   </p>
@@ -365,7 +366,9 @@ export default function CollectionsPage() {
                 What are Collections?
               </h3>
               <p className="text-gray-600 text-sm mb-3">
-                Collections are like database tables where you define the structure of your data. Each collection can have fields, relations, and constraints.
+                Collections are like database tables where you define the
+                structure of your data. Each collection can have fields,
+                relations, and constraints.
               </p>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>✓ Define custom fields and data types</li>
@@ -608,316 +611,312 @@ export default function CollectionsPage() {
       >
         <div className="p-6">
           <form onSubmit={handleCreate} className="space-y-6">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
-              {!editingCollection && (
-                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
-                  <p className="font-semibold mb-1">ℹ️ Automatic ID Field</p>
-                  <p>
-                    Every collection automatically gets an{" "}
-                    <code className="bg-blue-100 px-1 rounded">id</code> field
-                    as primary key. You don't need to add it manually.
-                  </p>
-                </div>
-              )}
+            {!editingCollection && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
+                <p className="font-semibold mb-1">ℹ️ Automatic ID Field</p>
+                <p>
+                  Every collection automatically gets an{" "}
+                  <code className="bg-blue-100 px-1 rounded">id</code> field as
+                  primary key. You don't need to add it manually.
+                </p>
+              </div>
+            )}
 
-              <Input
-                label="Collection Name"
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="e.g., Products, Users, Posts"
-              />
+            <Input
+              label="Collection Name"
+              required
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              placeholder="e.g., Products, Users, Posts"
+            />
 
-              {!editingCollection && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    ID Type
-                  </label>
-                  <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                    value={formData.schema.idType || "uuid"}
+            {!editingCollection && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  ID Type
+                </label>
+                <select
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  value={formData.schema.idType || "uuid"}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      schema: {
+                        ...formData.schema,
+                        idType: e.target.value as "uuid" | "autoincrement",
+                      },
+                    })
+                  }
+                >
+                  <option value="uuid">
+                    UUID (String) - Recommended for distributed systems
+                  </option>
+                  <option value="autoincrement">
+                    Auto-increment (Integer) - Sequential numbers
+                  </option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.schema.idType === "uuid"
+                    ? 'UUID generates unique string IDs (e.g., "550e8400-e29b-41d4-a716-446655440000")'
+                    : "Auto-increment generates sequential integer IDs (1, 2, 3, ...)"}
+                </p>
+              </div>
+            )}
+
+            {/* Add Field Section */}
+            <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+              <h3 className="font-semibold">Add Fields</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input
+                    className="flex-1 min-w-[150px]"
+                    placeholder="Field name"
+                    value={newField.name || ""}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        schema: {
-                          ...formData.schema,
-                          idType: e.target.value as "uuid" | "autoincrement",
-                        },
-                      })
+                      setNewField({ ...newField, name: e.target.value })
                     }
+                  />
+                  <select
+                    className="px-4 py-2 border border-gray-300 rounded-lg min-w-[120px]"
+                    value={newField.type}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      setNewField({
+                        ...newField,
+                        type: newType,
+                        relation:
+                          newType === "relation"
+                            ? newField.relation
+                            : undefined,
+                      });
+                      setShowRelationConfig(newType === "relation");
+                    }}
                   >
-                    <option value="uuid">
-                      UUID (String) - Recommended for distributed systems
-                    </option>
-                    <option value="autoincrement">
-                      Auto-increment (Integer) - Sequential numbers
-                    </option>
+                    {FIELD_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formData.schema.idType === "uuid"
-                      ? 'UUID generates unique string IDs (e.g., "550e8400-e29b-41d4-a716-446655440000")'
-                      : "Auto-increment generates sequential integer IDs (1, 2, 3, ...)"}
-                  </p>
-                </div>
-              )}
-
-              {/* Add Field Section */}
-              <div className="border border-gray-200 rounded-lg p-4 space-y-4">
-                <h3 className="font-semibold">Add Fields</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Input
-                      className="flex-1 min-w-[150px]"
-                      placeholder="Field name"
-                      value={newField.name || ""}
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newField.required}
                       onChange={(e) =>
-                        setNewField({ ...newField, name: e.target.value })
-                      }
-                    />
-                    <select
-                      className="px-4 py-2 border border-gray-300 rounded-lg min-w-[120px]"
-                      value={newField.type}
-                      onChange={(e) => {
-                        const newType = e.target.value;
                         setNewField({
                           ...newField,
-                          type: newType,
-                          relation:
-                            newType === "relation"
-                              ? newField.relation
-                              : undefined,
-                        });
-                        setShowRelationConfig(newType === "relation");
-                      }}
-                    >
-                      {FIELD_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={newField.required}
-                        onChange={(e) =>
-                          setNewField({
-                            ...newField,
-                            required: e.target.checked,
-                          })
-                        }
-                      />
-                      <span className="text-sm whitespace-nowrap">
-                        Required
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={newField.unique}
-                        onChange={(e) =>
-                          setNewField({
-                            ...newField,
-                            unique: e.target.checked,
-                          })
-                        }
-                      />
-                      <span className="text-sm whitespace-nowrap">Unique</span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={newField.indexed}
-                        onChange={(e) =>
-                          setNewField({
-                            ...newField,
-                            indexed: e.target.checked,
-                          })
-                        }
-                      />
-                      <span className="text-sm whitespace-nowrap">Index</span>
-                    </label>
-                    <Button type="button" size="sm" onClick={handleAddField}>
-                      +
-                    </Button>
-                  </div>
-
-                  {/* Relation Configuration */}
-                  {showRelationConfig && newField.type === "relation" && (
-                    <div className="bg-gray-50 p-3 rounded-lg space-y-3 border border-gray-200">
-                      <p className="text-sm font-medium text-gray-700">
-                        Configure Relation
-                      </p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Related Collection
-                          </label>
-                          <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            value={newField.relation?.collection || ""}
-                            onChange={(e) =>
-                              setNewField({
-                                ...newField,
-                                relation: {
-                                  ...newField.relation,
-                                  collection: e.target.value,
-                                  type:
-                                    newField.relation?.type || "one-to-many",
-                                } as any,
-                              })
-                            }
-                          >
-                            <option value="">Select collection...</option>
-                            {availableCollections.map((col) => (
-                              <option key={col.id} value={col.slug}>
-                                {col.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Relation Type
-                          </label>
-                          <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            value={newField.relation?.type || "one-to-many"}
-                            onChange={(e) =>
-                              setNewField({
-                                ...newField,
-                                relation: {
-                                  ...newField.relation,
-                                  collection:
-                                    newField.relation?.collection || "",
-                                  type: e.target.value as any,
-                                } as any,
-                              })
-                            }
-                          >
-                            {RELATION_TYPES.map((rt) => (
-                              <option key={rt.value} value={rt.value}>
-                                {rt.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {newField.relation?.type === "one-to-one" &&
-                          "One record relates to exactly one other record"}
-                        {newField.relation?.type === "one-to-many" &&
-                          "One record can relate to many other records"}
-                        {newField.relation?.type === "many-to-many" &&
-                          "Many records can relate to many other records"}
-                      </p>
-                    </div>
-                  )}
+                          required: e.target.checked,
+                        })
+                      }
+                    />
+                    <span className="text-sm whitespace-nowrap">Required</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newField.unique}
+                      onChange={(e) =>
+                        setNewField({
+                          ...newField,
+                          unique: e.target.checked,
+                        })
+                      }
+                    />
+                    <span className="text-sm whitespace-nowrap">Unique</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newField.indexed}
+                      onChange={(e) =>
+                        setNewField({
+                          ...newField,
+                          indexed: e.target.checked,
+                        })
+                      }
+                    />
+                    <span className="text-sm whitespace-nowrap">Index</span>
+                  </label>
+                  <Button type="button" size="sm" onClick={handleAddField}>
+                    +
+                  </Button>
                 </div>
 
-                {/* Fields List */}
-                {formData.schema.fields.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    {formData.schema.fields.map((field, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                      >
-                        <span className="text-sm">
-                          <span className="font-medium">{field.name}</span>
-                          <span className="text-gray-500 ml-2">
-                            ({field.type})
-                          </span>
-                          {field.relation && (
-                            <span className="text-purple-500 ml-2">
-                              → {field.relation.collection} (
-                              {field.relation.type})
-                            </span>
-                          )}
-                          {field.required && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                          {field.unique && (
-                            <span className="text-blue-500 ml-1">🔑</span>
-                          )}
-                          {field.indexed && !field.unique && (
-                            <span className="text-green-500 ml-1">📇</span>
-                          )}
-                        </span>
-                        <X
-                          className="w-4 h-4 text-red-500 cursor-pointer"
-                          onClick={() => handleRemoveField(index)}
-                        />
+                {/* Relation Configuration */}
+                {showRelationConfig && newField.type === "relation" && (
+                  <div className="bg-gray-50 p-3 rounded-lg space-y-3 border border-gray-200">
+                    <p className="text-sm font-medium text-gray-700">
+                      Configure Relation
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Related Collection
+                        </label>
+                        <select
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          value={newField.relation?.collection || ""}
+                          onChange={(e) =>
+                            setNewField({
+                              ...newField,
+                              relation: {
+                                ...newField.relation,
+                                collection: e.target.value,
+                                type: newField.relation?.type || "one-to-many",
+                              } as any,
+                            })
+                          }
+                        >
+                          <option value="">Select collection...</option>
+                          {availableCollections.map((col) => (
+                            <option key={col.id} value={col.slug}>
+                              {col.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    ))}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Relation Type
+                        </label>
+                        <select
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          value={newField.relation?.type || "one-to-many"}
+                          onChange={(e) =>
+                            setNewField({
+                              ...newField,
+                              relation: {
+                                ...newField.relation,
+                                collection: newField.relation?.collection || "",
+                                type: e.target.value as any,
+                              } as any,
+                            })
+                          }
+                        >
+                          {RELATION_TYPES.map((rt) => (
+                            <option key={rt.value} value={rt.value}>
+                              {rt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {newField.relation?.type === "one-to-one" &&
+                        "One record relates to exactly one other record"}
+                      {newField.relation?.type === "one-to-many" &&
+                        "One record can relate to many other records"}
+                      {newField.relation?.type === "many-to-many" &&
+                        "Many records can relate to many other records"}
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Options */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.schema.timestamps}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        schema: {
-                          ...formData.schema,
-                          timestamps: e.target.checked,
-                        },
-                      })
-                    }
-                  />
-                  <span className="text-sm">
-                    Enable timestamps (createdAt, updatedAt)
-                  </span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.schema.softDelete}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        schema: {
-                          ...formData.schema,
-                          softDelete: e.target.checked,
-                        },
-                      })
-                    }
-                  />
-                  <span className="text-sm">Enable soft delete</span>
-                </label>
-              </div>
+              {/* Fields List */}
+              {formData.schema.fields.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  {formData.schema.fields.map((field, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                    >
+                      <span className="text-sm">
+                        <span className="font-medium">{field.name}</span>
+                        <span className="text-gray-500 ml-2">
+                          ({field.type})
+                        </span>
+                        {field.relation && (
+                          <span className="text-purple-500 ml-2">
+                            → {field.relation.collection} ({field.relation.type}
+                            )
+                          </span>
+                        )}
+                        {field.required && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
+                        {field.unique && (
+                          <span className="text-blue-500 ml-1">🔑</span>
+                        )}
+                        {field.indexed && !field.unique && (
+                          <span className="text-green-500 ml-1">📇</span>
+                        )}
+                      </span>
+                      <X
+                        className="w-4 h-4 text-red-500 cursor-pointer"
+                        onClick={() => handleRemoveField(index)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setEditingCollection(null);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1" isLoading={submitting}>
-                  {editingCollection ? "Update Collection" : "Create Collection"}
-                </Button>
-              </div>
-            </form>
-          </div>
+            {/* Options */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.schema.timestamps}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      schema: {
+                        ...formData.schema,
+                        timestamps: e.target.checked,
+                      },
+                    })
+                  }
+                />
+                <span className="text-sm">
+                  Enable timestamps (createdAt, updatedAt)
+                </span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.schema.softDelete}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      schema: {
+                        ...formData.schema,
+                        softDelete: e.target.checked,
+                      },
+                    })
+                  }
+                />
+                <span className="text-sm">Enable soft delete</span>
+              </label>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingCollection(null);
+                  resetForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1" isLoading={submitting}>
+                {editingCollection ? "Update Collection" : "Create Collection"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );
