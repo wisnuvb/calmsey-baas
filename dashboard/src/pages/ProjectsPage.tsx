@@ -5,6 +5,7 @@ import { Project, ApiResponse } from "../types";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import Modal from "../components/ui/Modal";
 import { formatDate, truncate } from "../lib/utils";
 import React from "react";
 
@@ -244,11 +245,31 @@ export default function ProjectsPage() {
       )}
 
       {/* Enhanced Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Create New Project</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setFormData({
+            name: "",
+            description: "",
+            useDedicatedDb: false,
+            useSameServer: true,
+            dbConfig: {
+              host: "",
+              port: 5432,
+              database: "",
+              username: "",
+              password: "",
+              type: "postgresql"
+            }
+          });
+          setError("");
+        }}
+        title="Create New Project"
+        size="2xl"
+      >
+        <div className="p-6">
+          <form onSubmit={handleCreate} className="space-y-4">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   {error}
@@ -457,7 +478,7 @@ export default function ProjectsPage() {
                 )}
               </div>
 
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-3 pt-4">
                 <Button
                   type="button"
                   variant="secondary"
@@ -488,9 +509,8 @@ export default function ProjectsPage() {
                 </Button>
               </div>
             </form>
-          </Card>
-        </div>
-      )}
+          </div>
+      </Modal>
     </div>
   );
 }
