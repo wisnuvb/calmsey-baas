@@ -1,139 +1,554 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import api from "../lib/api";
-import { Project, ApiResponse } from "../types";
+import { Project, ApiResponse, Collection } from "../types";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { formatDate } from "../lib/utils";
 import React from "react";
 
+interface OutletContext {
+  selectedProject: Project | null;
+}
+
 export default function DashboardPage() {
+  const { selectedProject } = useOutletContext<OutletContext>();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalCollections: 0,
     totalApiKeys: 0,
+    totalRecords: 0,
   });
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    fetchDashboardData();
+  }, [selectedProject]);
 
-  const fetchProjects = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const response = await api.get<ApiResponse<Project[]>>("/projects");
-      if (response.data.success && response.data.data) {
-        setProjects(response.data.data);
+      const [projectsRes, collectionsRes] = await Promise.all([
+        api.get<ApiResponse<Project[]>>("/projects"),
+        selectedProject
+          ? api.get<ApiResponse<Collection[]>>(
+              `/collections?projectId=${selectedProject.id}`
+            )
+          : Promise.resolve({ data: { success: true, data: [] } }),
+      ]);
+
+      if (projectsRes.data.success && projectsRes.data.data) {
+        const projectsData = projectsRes.data.data;
+        setProjects(projectsData);
+
+        const totalCollections = projectsData.reduce(
+          (acc, p) => acc + (p._count?.collections || 0),
+          0
+        );
+        const totalApiKeys = projectsData.reduce(
+          (acc, p) => acc + (p._count?.apiKeys || 0),
+          0
+        );
+
         setStats({
-          totalProjects: response.data.data.length,
-          totalCollections: response.data.data.reduce(
-            (acc, p) => acc + (p._count?.collections || 0),
-            0
-          ),
-          totalApiKeys: response.data.data.reduce(
-            (acc, p) => acc + (p._count?.apiKeys || 0),
-            0
-          ),
+          totalProjects: projectsData.length,
+          totalCollections,
+          totalApiKeys,
+          totalRecords: 0, // Can be fetched from aggregation API if needed
         });
       }
+
+      if (collectionsRes.data.success && collectionsRes.data.data) {
+        setCollections(collectionsRes.data.data);
+      }
     } catch (error) {
-      console.error("Failed to fetch projects:", error);
+      console.error("Failed to fetch dashboard data:", error);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-1 text-gray-600">
-            Welcome back! Here's your overview.
-          </p>
-        </div>
-        <Link to="/projects">
-          <Button>Create Project</Button>
-        </Link>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Welcome back{" "}
+          <span role="img" aria-label="wave">
+            👋
+          </span>
+        </h1>
+        <p className="mt-2 text-gray-600">
+          Here's an overview of your Backend as a Service projects
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Projects</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                Total Projects
+              </p>
+              <p className="text-3xl font-bold text-gray-900">
                 {stats.totalProjects}
               </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Active backend projects
+              </p>
             </div>
-            <div className="text-4xl">📁</div>
+            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+              <span className="text-2xl">📁</span>
+            </div>
           </div>
         </Card>
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Collections</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                Collections
+              </p>
+              <p className="text-3xl font-bold text-gray-900">
                 {stats.totalCollections}
               </p>
-            </div>
-            <div className="text-4xl">🗂️</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total API Keys</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">
-                {stats.totalApiKeys}
+              <p className="text-xs text-gray-500 mt-2">
+                Database collections
               </p>
             </div>
-            <div className="text-4xl">🔑</div>
+            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+              <span className="text-2xl">🗂️</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                API Keys
+              </p>
+              <p className="text-3xl font-bold text-gray-900">
+                {stats.totalApiKeys}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Active authentication keys
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+              <span className="text-2xl">🔑</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                Features
+              </p>
+              <p className="text-3xl font-bold text-gray-900">15+</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Enterprise capabilities
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
+              <span className="text-2xl">⚡</span>
+            </div>
           </div>
         </Card>
       </div>
 
-      {/* Recent Projects */}
-      <Card title="Recent Projects">
-        {projects.length === 0 ? (
-          <div className="text-center py-12 flex flex-col items-center justify-center">
-            <p className="text-gray-500 mb-4">No projects yet</p>
+      {/* Getting Started / Quick Actions */}
+      {projects.length === 0 ? (
+        <Card>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4">
+              <span className="text-4xl">🚀</span>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Get Started with Calmsey BaaS
+            </h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Create your first project to start building your backend API with
+              enterprise features
+            </p>
             <Link to="/projects">
-              <Button>Create Your First Project</Button>
+              <Button size="lg">Create Your First Project</Button>
             </Link>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {projects.slice(0, 5).map((project) => (
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Quick Actions */}
+          <Card title="Quick Actions" className="lg:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Link
-                key={project.id}
-                to={`/projects`}
-                className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                to="/projects"
+                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all group"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {project.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {project._count?.collections || 0} collections •{" "}
-                      {project._count?.apiKeys || 0} API keys
-                    </p>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center group-hover:bg-primary-200">
+                    <span className="text-xl">➕</span>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {formatDate(project.createdAt)}
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      New Project
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Create a new backend project
+                    </p>
                   </div>
                 </div>
               </Link>
-            ))}
+
+              <Link
+                to="/collections"
+                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:bg-green-200">
+                    <span className="text-xl">🗂️</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      Add Collection
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Create database tables
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                to="/api-keys"
+                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:bg-purple-200">
+                    <span className="text-xl">🔑</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      Generate API Key
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Create authentication keys
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                to="/help"
+                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200">
+                    <span className="text-xl">📚</span>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      View Documentation
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Learn about features
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Key Features */}
+          <Card title="Enterprise Features">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    ACID Transactions
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Atomic database operations
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Real-time Subscriptions
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    WebSocket live updates
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Webhooks
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Event-driven callbacks
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Multi-Database
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Dedicated DB per project
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Audit Logging
+                  </p>
+                  <p className="text-xs text-gray-600">Complete trail</p>
+                </div>
+              </div>
+              <Link
+                to="/help"
+                className="block text-sm text-primary-600 hover:text-primary-700 font-medium mt-4"
+              >
+                View all features →
+              </Link>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Recent Projects */}
+      {projects.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card
+            title="Recent Projects"
+            actions={
+              <Link
+                to="/projects"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                View all →
+              </Link>
+            }
+          >
+            <div className="space-y-3">
+              {projects.slice(0, 5).map((project) => (
+                <Link
+                  key={project.id}
+                  to={`/projects`}
+                  className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">
+                          {project.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 truncate">
+                          {project.name}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          {project._count?.collections || 0} collections •{" "}
+                          {project._count?.apiKeys || 0} keys
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 ml-2">
+                      {formatDate(project.createdAt)}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              {projects.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No projects yet</p>
+                  <Link
+                    to="/projects"
+                    className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block"
+                  >
+                    Create your first project →
+                  </Link>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Recent Collections (if project selected) */}
+          {selectedProject && (
+            <Card
+              title={`${selectedProject.name} - Collections`}
+              actions={
+                <Link
+                  to="/collections"
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Manage →
+                </Link>
+              }
+            >
+              <div className="space-y-3">
+                {collections.length > 0 ? (
+                  collections.slice(0, 5).map((collection) => (
+                    <Link
+                      key={collection.id}
+                      to={`/collections/${collection.id}`}
+                      className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <span className="text-xl">🗂️</span>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">
+                              {collection.name}
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              {collection.slug}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No collections yet</p>
+                    <Link
+                      to="/collections"
+                      className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block"
+                    >
+                      Create your first collection →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* API Resources */}
+          {!selectedProject && (
+            <Card title="API Resources">
+              <div className="space-y-4">
+                <a
+                  href="http://localhost:3000/docs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">📖</span>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">
+                        API Documentation
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Interactive Swagger/OpenAPI docs
+                      </p>
+                    </div>
+                  </div>
+                </a>
+
+                <Link
+                  to="/help"
+                  className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">📚</span>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">
+                        Feature Guides
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Learn about enterprise features
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+
+                <a
+                  href="https://github.com/wisnuvb/calmsey-baas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary-300 transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">💻</span>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">
+                        GitHub Repository
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Source code and examples
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Help Section */}
+      <Card>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-2xl">💡</span>
           </div>
-        )}
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Need Help Getting Started?
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Calmsey BaaS provides a complete backend solution with enterprise
+              features like transactions, real-time subscriptions, webhooks, and
+              more. Check out our documentation to learn how to build powerful
+              applications.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/help">
+                <Button variant="outline">View Documentation</Button>
+              </Link>
+              <a
+                href="http://localhost:3000/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline">API Reference</Button>
+              </a>
+              <a
+                href="https://github.com/wisnuvb/calmsey-baas/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline">Report Issue</Button>
+              </a>
+            </div>
+          </div>
+        </div>
       </Card>
     </div>
   );
