@@ -21,9 +21,9 @@ model User {
   role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  projects  Project[]
-  apiKeys   ApiKey[]
+
+  projects Project[]
+  apiKeys  ApiKey[]
 }
 
 enum UserRole {
@@ -33,27 +33,27 @@ enum UserRole {
 
 // Project/Tenant - setiap project punya database schema sendiri
 model Project {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String  @unique
   description String?
-  database    String?  // database name atau schema name
+  database    String? // database name atau schema name
 
   // Multi-database support
-  useDedicatedDb    Boolean  @default(false) // true jika pakai database terpisah
-  dbConnectionUrl   String?  // connection string untuk dedicated database
-  dbHost            String?  // host database (optional, extracted from connectionUrl)
-  dbPort            Int?     // port database
-  dbName            String?  // nama database
-  dbUser            String?  // username database
-  dbPassword        String?  // password database (encrypted)
-  dbStatus          DbStatus @default(ACTIVE) // status database connection
+  useDedicatedDb  Boolean  @default(false) // true jika pakai database terpisah
+  dbConnectionUrl String? // connection string untuk dedicated database
+  dbHost          String? // host database (optional, extracted from connectionUrl)
+  dbPort          Int? // port database
+  dbName          String? // nama database
+  dbUser          String? // username database
+  dbPassword      String? // password database (encrypted)
+  dbStatus        DbStatus @default(ACTIVE) // status database connection
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   collections Collection[]
   apiKeys     ApiKey[]
@@ -61,6 +61,7 @@ model Project {
   auditLogs   AuditLog[]
   webhooks    Webhook[]
   emailLogs   EmailLog[]
+  functions   Function[]
 }
 
 enum DbStatus {
@@ -72,93 +73,93 @@ enum DbStatus {
 
 // Collection = Table definition (dynamic schema)
 model Collection {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "products", "posts", "users"
-  slug        String   // URL-friendly name
-  schema      Json     // JSON schema definition
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  name      String // e.g., "products", "posts", "users"
+  slug      String // URL-friendly name
+  schema    Json // JSON schema definition
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@unique([projectId, slug])
 }
 
 // API Keys untuk authentication
 model ApiKey {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  key       String   @unique
-  createdAt DateTime @default(now())
+  key       String    @unique
+  createdAt DateTime  @default(now())
   lastUsed  DateTime?
-  
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // Project settings (email, storage, etc.)
 model ProjectSettings {
-  id              String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Email settings
-  emailEnabled    Boolean  @default(false)
-  emailProvider   String?
-  emailConfig     Json?
+  emailEnabled  Boolean @default(false)
+  emailProvider String?
+  emailConfig   Json?
 
   // Storage settings
-  storageType     String   @default("local")
-  storageConfig   Json?
+  storageType   String @default("local")
+  storageConfig Json?
 
   // Auth settings
-  authEnabled     Boolean  @default(true)
-  jwtExpiry       Int      @default(86400) // seconds
+  authEnabled Boolean @default(true)
+  jwtExpiry   Int     @default(86400) // seconds
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  projectId       String   @unique
-  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // Audit Log - Track all data changes for compliance
 model AuditLog {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Who made the change
-  userId        String?  // null if via API key
-  userEmail     String?
-  apiKeyId      String?
-  apiKeyName    String?
+  userId     String? // null if via API key
+  userEmail  String?
+  apiKeyId   String?
+  apiKeyName String?
 
   // What changed
-  action        AuditAction // CREATE, UPDATE, DELETE, etc
-  tableName     String   // collection table name
-  collectionId  String?  // reference to collection
-  recordId      String   // ID of the record that changed
+  action       AuditAction // CREATE, UPDATE, DELETE, etc
+  tableName    String // collection table name
+  collectionId String? // reference to collection
+  recordId     String // ID of the record that changed
 
   // Change details
-  oldData       Json?    // snapshot before change
-  newData       Json?    // snapshot after change
-  changedFields Json?    // array of changed field names
+  oldData       Json? // snapshot before change
+  newData       Json? // snapshot after change
+  changedFields Json? // array of changed field names
 
   // Context
   ipAddress     String?
   userAgent     String?
-  requestMethod String?  // GET, POST, PATCH, DELETE
+  requestMethod String? // GET, POST, PATCH, DELETE
   requestPath   String?
 
   // Transaction support
-  transactionId String?  // group related operations
+  transactionId String? // group related operations
 
   // Project reference
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([projectId, createdAt])
   @@index([userId])
@@ -179,32 +180,32 @@ enum AuditAction {
 
 // Webhook - Event-driven HTTP callbacks
 model Webhook {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  name        String
-  url         String   // Webhook endpoint URL
-  events      Json     // Array of event types to subscribe to
-  headers     Json?    // Custom headers to send
-  secret      String?  // Secret for signature verification
+  name    String
+  url     String // Webhook endpoint URL
+  events  Json // Array of event types to subscribe to
+  headers Json? // Custom headers to send
+  secret  String? // Secret for signature verification
 
-  active      Boolean  @default(true)
+  active Boolean @default(true)
 
   // Retry configuration
-  maxRetries  Int      @default(3)
-  timeout     Int      @default(30000) // milliseconds
+  maxRetries Int @default(3)
+  timeout    Int @default(30000) // milliseconds
 
   // Stats
   lastTriggered DateTime?
-  successCount  Int      @default(0)
-  failureCount  Int      @default(0)
+  successCount  Int       @default(0)
+  failureCount  Int       @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  logs        WebhookLog[]
+  logs WebhookLog[]
 
   @@index([projectId])
   @@index([active])
@@ -212,23 +213,23 @@ model Webhook {
 
 // Webhook delivery logs
 model WebhookLog {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  webhookId     String
-  webhook       Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
 
-  event         String   // Event type (onCreate, onUpdate, etc)
-  payload       Json     // Data sent to webhook
+  event   String // Event type (onCreate, onUpdate, etc)
+  payload Json // Data sent to webhook
 
-  status        WebhookStatus
-  statusCode    Int?     // HTTP status code
-  response      String?  // Response body
-  error         String?  // Error message if failed
+  status     WebhookStatus
+  statusCode Int? // HTTP status code
+  response   String? // Response body
+  error      String? // Error message if failed
 
-  attempt       Int      @default(1)
-  duration      Int?     // Request duration in ms
+  attempt  Int  @default(1)
+  duration Int? // Request duration in ms
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([webhookId, createdAt])
   @@index([status])
@@ -243,34 +244,34 @@ enum WebhookStatus {
 
 // Email logs
 model EmailLog {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  to          String   // Recipient email
-  from        String?  // Sender email (can be default)
-  subject     String
-  body        String   @db.Text
-  html        String?  @db.Text
+  to      String // Recipient email
+  from    String? // Sender email (can be default)
+  subject String
+  body    String  @db.Text
+  html    String? @db.Text
 
   // Email type
-  type        EmailType
+  type EmailType
 
   // Status
-  status      EmailStatus
-  error       String?
-  messageId   String?  // Email provider message ID
+  status    EmailStatus
+  error     String?
+  messageId String? // Email provider message ID
 
   // Template info
-  template    String?
+  template     String?
   templateData Json?
 
   // Metadata
-  metadata    Json?
+  metadata Json?
 
-  sentAt      DateTime?
-  createdAt   DateTime @default(now())
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
 
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId, createdAt])
   @@index([status])
@@ -290,4 +291,106 @@ enum EmailStatus {
   SENT
   FAILED
   BOUNCED
+}
+
+// Custom Functions - User-defined serverless functions
+model Function {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String // URL-friendly name for invocation
+  description String? @db.Text
+
+  // Code
+  sourceCode String @db.Text // TypeScript/JavaScript source code
+  language   String @default("typescript")
+  entrypoint String @default("handler") // Function name to call
+
+  // Runtime configuration
+  timeout Int @default(30000) // Execution timeout in ms
+  memory  Int @default(256) // Memory limit in MB
+
+  // Environment variables (encrypted)
+  envVars Json? // { "KEY": "value" }
+
+  // Metadata
+  status  FunctionStatus @default(DRAFT)
+  version Int            @default(1)
+
+  // Compiled bundle info
+  bundlePath String? // Path to compiled bundle (if cached)
+  bundleHash String? // Hash of source code for cache invalidation
+  lastBuilt  DateTime?
+
+  // Stats
+  invocations Int       @default(0)
+  lastInvoked DateTime?
+  avgDuration Int? // Average execution time in ms
+  errorRate   Float? // Error rate percentage
+
+  // Relations
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  logs FunctionLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, slug])
+  @@index([projectId, status])
+  @@index([status])
+}
+
+enum FunctionStatus {
+  DRAFT // Not yet deployed
+  ACTIVE // Running and invokable
+  INACTIVE // Temporarily disabled
+  ERROR // Build or runtime error
+}
+
+// Function execution logs
+model FunctionLog {
+  id String @id @default(cuid())
+
+  functionId String
+  function   Function @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  // Execution info
+  status     FunctionLogStatus
+  duration   Int? // Execution time in ms
+  memoryUsed Int? // Memory used in MB
+
+  // Request/Response
+  requestBody    Json? // Input data
+  requestHeaders Json? // Request headers
+  requestMethod  String? // HTTP method
+  requestQuery   Json? // Query parameters
+
+  responseBody   Json? // Output data
+  responseStatus Int? // HTTP status code
+
+  // Error info
+  error      String? @db.Text
+  errorStack String? @db.Text
+
+  // Console output
+  logs String? @db.Text // Captured console.log output
+
+  // Context
+  ipAddress String?
+  userAgent String?
+  apiKeyId  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([functionId, createdAt])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum FunctionLogStatus {
+  SUCCESS
+  ERROR
+  TIMEOUT
+  MEMORY_EXCEEDED
 }

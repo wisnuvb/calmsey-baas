@@ -23,6 +23,7 @@ import {
   Download,
   Upload,
   CopyIcon,
+  Clock,
 } from "lucide-react";
 import React from "react";
 import {
@@ -390,13 +391,16 @@ export default function CollectionDetailPage() {
         options.body = requestPayload;
       }
 
+      const startTime = performance.now();
       const res = await fetch(url, options);
+      const endTime = performance.now();
       const data = await res.json();
 
       setResponse({
         status: res.status,
         statusText: res.statusText,
         data,
+        duration: Math.round(endTime - startTime),
         url: url, // Include URL in response for reference
       });
     } catch (error: any) {
@@ -967,8 +971,14 @@ export default function CollectionDetailPage() {
 
                 {response && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="flex items-center justify-between gap-2 text-sm font-medium text-gray-700 mb-2">
                       Response
+                      {response.duration !== undefined && (
+                        <div className="flex items-center gap-1 text-gray-400">
+                          <Clock className="w-3 h-3" />
+                          <span className="text-xs">{response.duration}ms</span>
+                        </div>
+                      )}
                     </label>
                     <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-auto max-h-96">
                       <div className="mb-2 flex items-center justify-between gap-2">

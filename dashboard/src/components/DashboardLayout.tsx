@@ -23,7 +23,7 @@ export default function DashboardLayout() {
     // Fetch fresh user data and projects
     Promise.all([
       api.get("/auth/me"),
-      api.get<ApiResponse<Project[]>>("/projects")
+      api.get<ApiResponse<Project[]>>("/projects"),
     ])
       .then(([userResponse, projectsResponse]) => {
         if (userResponse.data.success && userResponse.data.data) {
@@ -52,21 +52,35 @@ export default function DashboardLayout() {
       items: [
         { name: "Home", href: "/", icon: "🏠" },
         { name: "Projects", href: "/projects", icon: "📁" },
-      ]
+      ],
     },
     {
       section: "Project",
       items: [
-        { name: "Collections", href: "/collections", icon: "🗂️", projectRequired: true },
-        { name: "API Keys", href: "/api-keys", icon: "🔑", projectRequired: true },
-      ]
+        {
+          name: "Collections",
+          href: "/collections",
+          icon: "🗂️",
+          projectRequired: true,
+        },
+        {
+          name: "Functions",
+          href: "/functions",
+          icon: "⚡",
+          projectRequired: true,
+        },
+        {
+          name: "API Keys",
+          href: "/api-keys",
+          icon: "🔑",
+          projectRequired: true,
+        },
+      ],
     },
     {
       section: "Resources",
-      items: [
-        { name: "Documentation", href: "/help", icon: "📚" },
-      ]
-    }
+      items: [{ name: "Documentation", href: "/help", icon: "📚" }],
+    },
   ];
 
   if (loading) {
@@ -126,7 +140,9 @@ export default function DashboardLayout() {
                         setShowProjectDropdown(false);
                       }}
                       className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors ${
-                        selectedProject?.id === project.id ? "bg-primary-50" : ""
+                        selectedProject?.id === project.id
+                          ? "bg-primary-50"
+                          : ""
                       }`}
                     >
                       <div className="text-sm font-medium text-gray-900">
@@ -232,6 +248,7 @@ export default function DashboardLayout() {
                 {location.pathname === "/" && "Dashboard"}
                 {location.pathname === "/projects" && "Projects"}
                 {location.pathname === "/collections" && "Collections"}
+                {location.pathname === "/functions" && "Functions"}
                 {location.pathname === "/api-keys" && "API Keys"}
                 {location.pathname === "/help" && "Documentation"}
               </h2>

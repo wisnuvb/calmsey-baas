@@ -85,6 +85,29 @@ export interface ApiKey {
   lastUsed: string | null;
 }
 
+export interface Function {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  sourceCode: string;
+  language: string;
+  entrypoint: string;
+  status: "DRAFT" | "ACTIVE" | "INACTIVE" | "ERROR";
+  version: number;
+  invocations: number;
+  lastInvoked?: string;
+  avgDuration?: number;
+  errorRate?: number;
+  timeout: number;
+  memory: number;
+  envVars?: Record<string, string>;
+  projectId: string;
+  project?: Project;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;

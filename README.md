@@ -5,6 +5,7 @@ Backend as a Service platform yang memungkinkan Anda membuat REST API secara din
 ## ✨ Fitur
 
 - 🚀 **Dynamic API Generation** - Buat REST API otomatis berdasarkan schema JSON
+- ⚡ **Custom Functions** - Serverless functions dengan TypeScript/JavaScript (NEW!)
 - 🔐 **Authentication & Authorization** - JWT authentication + API key management
 - 📊 **Multi-tenant** - Project isolation dengan database per project
 - 🗄️ **Database Flexibility** - Support PostgreSQL dan MySQL

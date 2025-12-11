@@ -109,3 +109,40 @@ export interface QueryParams {
   populate?: string | string[];
   fields?: string | string[]; // Field selection
 }
+
+// Function types
+export interface FunctionDefinition {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  sourceCode: string;
+  language: string;
+  entrypoint: string;
+  timeout: number;
+  memory: number;
+  envVars?: Record<string, string>;
+  status: "DRAFT" | "ACTIVE" | "INACTIVE" | "ERROR";
+  version: number;
+  invocations: number;
+  lastInvoked?: Date;
+  projectId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FunctionLogEntry {
+  id: string;
+  functionId: string;
+  status: "SUCCESS" | "ERROR" | "TIMEOUT" | "MEMORY_EXCEEDED";
+  duration?: number;
+  memoryUsed?: number;
+  requestBody?: any;
+  requestHeaders?: any;
+  responseBody?: any;
+  responseStatus?: number;
+  error?: string;
+  errorStack?: string;
+  logs?: string;
+  createdAt: Date;
+}
