@@ -1,6 +1,6 @@
 # Custom Functions - Calmsey BaaS
 
-Dokumentasi lengkap untuk fitur Custom Functions (Serverless Functions) di Calmsey BaaS.
+Complete documentation for the Custom Functions (Serverless Functions) feature in Calmsey BaaS.
 
 ## 📋 Table of Contents
 
@@ -16,21 +16,21 @@ Dokumentasi lengkap untuk fitur Custom Functions (Serverless Functions) di Calms
 
 ## Overview
 
-Custom Functions memungkinkan Anda menulis dan deploy serverless functions dengan TypeScript/JavaScript yang berjalan di server Calmsey BaaS. Functions ini dapat:
+Custom Functions allow you to write and deploy serverless functions with TypeScript/JavaScript that run on Calmsey BaaS servers. These functions can:
 
-- ✅ Akses database project Anda via Prisma
-- ✅ Menerima HTTP requests (GET/POST)
-- ✅ Menjalankan business logic custom
-- ✅ Menggunakan environment variables
-- ✅ Auto-scaling dan monitoring
+- ✅ Access your project database via Prisma
+- ✅ Receive HTTP requests (GET/POST)
+- ✅ Run custom business logic
+- ✅ Use environment variables
+- ✅ Auto-scaling and monitoring
 
 ### Use Cases
 
-- **API Endpoints Custom**: Buat endpoint dengan logic kompleks
-- **Data Processing**: Transform atau validate data sebelum save
-- **Integrations**: Connect dengan third-party APIs
-- **Scheduled Tasks**: Jalankan cron jobs (coming soon)
-- **Webhooks**: Handle webhook dari external services
+- **Custom API Endpoints**: Create endpoints with complex logic
+- **Data Processing**: Transform or validate data before saving
+- **Integrations**: Connect with third-party APIs
+- **Scheduled Tasks**: Run cron jobs (coming soon)
+- **Webhooks**: Handle webhooks from external services
 
 ---
 
@@ -38,14 +38,14 @@ Custom Functions memungkinkan Anda menulis dan deploy serverless functions denga
 
 ### 1. Create Function via Dashboard
 
-1. Login ke dashboard
-2. Pilih project
-3. Navigate ke **Functions** → **+ New Function**
-4. Isi form:
+1. Login to dashboard
+2. Select project
+3. Navigate to **Functions** → **+ New Function**
+4. Fill the form:
    - **Name**: my-first-function
    - **Description**: My first serverless function
    - **Status**: Active
-5. Write your code (contoh sudah disediakan)
+5. Write your code (examples are provided)
 6. Click **Create Function**
 
 ### 2. Create Function via API

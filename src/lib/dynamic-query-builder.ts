@@ -1,9 +1,11 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import { WebSocketService } from "./websocket.service";
 import {
   FieldType,
   FieldDefinition,
   CollectionSchema,
   QueryParams,
+  AccessControlRules,
 } from "../types";
 
 export class DynamicQueryBuilder {
@@ -25,6 +27,100 @@ export class DynamicQueryBuilder {
     this.schema = schema;
     // Table name format: {projectId}_{collectionSlug}
     this.tableName = `data_${projectId.replace(/-/g, "_")}_${collectionSlug}`;
+  }
+
+  // --- Access Control (RBAC/PBAC) ---
+  private accessContext?: { role: string; userId?: string; userRole?: string };
+  private accessRules?: AccessControlRules;
+
+  setAccessControl(
+    context: { role: string; userId?: string; userRole?: string },
+    rules?: any
+  ) {
+    this.accessContext = context;
+    this.accessRules = rules;
+    return this;
+  }
+
+  private validateAccess(
+    action: "read" | "create" | "update" | "delete"
+  ): void {
+    // 1. If no context set, assume internal/legacy usage (allow all)
+    if (!this.accessContext) return;
+
+    // 2. Admin always allowed
+    if (this.accessContext.role === "admin") return;
+
+    // 3. Get rule (default to 'public' for backward compatibility)
+    const rule = this.accessRules?.[action] || "public";
+
+    // 4. Dynamic Role Pattern Check (e.g., "role:SUPPLIER")
+    if (rule.startsWith("role:")) {
+      const requiredRole = rule.split(":")[1];
+
+      // Handle system admin specially
+      if (requiredRole === "admin") {
+        // Only actual system admins (API Key) can pass this, which is checked above.
+        // So if we reach here, it's a regular user -> Deny
+        throw new Error(`Access denied: ${action} requires admin privileges`);
+      }
+
+      // Check user custom role
+      if (this.accessContext.userRole === requiredRole) {
+        return; // Access Granted
+      }
+
+      throw new Error(
+        `Access denied: requires role '${requiredRole}', user has '${
+          this.accessContext.userRole || "none"
+        }'`
+      );
+    }
+
+    // 5. Standard Rules Check
+    if (rule === "public") return;
+
+    if (rule === "authenticated") {
+      if (this.accessContext.role !== "authenticated") {
+        throw new Error(`Access denied: ${action} requires authentication`);
+      }
+      return;
+    }
+
+    if (rule === "owner") {
+      if (
+        this.accessContext.role !== "authenticated" ||
+        !this.accessContext.userId
+      ) {
+        throw new Error(
+          `Access denied: ${action} requires login to verify ownership`
+        );
+      }
+      return;
+    }
+
+    if (rule === "admin") {
+      throw new Error(`Access denied: ${action} requires admin privileges`);
+    }
+
+    // Unknown rule -> Deny
+    throw new Error(`Access denied: Restricted access`);
+  }
+
+  private getAccessFilter(action: "read" | "update" | "delete"): string | null {
+    if (!this.accessContext || this.accessContext.role === "admin") return null;
+
+    const rule = this.accessRules?.[action] || "public";
+    if (rule === "owner") {
+      // Convention: 'user' field stores the Owner ID
+      // Check if schema has 'user' field
+      const hasUserField = this.schema.fields.some((f) => f.name === "user");
+      if (hasUserField && this.accessContext.userId) {
+        return `"user" = '${this.accessContext.userId}'`;
+      }
+      return "1=0"; // Fail safe: block access
+    }
+    return null;
   }
 
   /**
@@ -438,7 +534,16 @@ export class DynamicQueryBuilder {
    * Insert data (updated with relation validation)
    */
   async insert(data: Record<string, any>): Promise<any> {
+    this.validateAccess("create");
     await this.ensureTableExists();
+
+    // Auto-fill owner field if rule is owner and user is authenticated
+    if (this.accessRules?.create === "owner" && this.accessContext?.userId) {
+      // Assume field name is 'user'. Check if exists in schema
+      if (this.schema.fields.some((f) => f.name === "user")) {
+        data["user"] = this.accessContext.userId;
+      }
+    }
 
     // Remove 'id' from data if it exists (will be auto-generated)
     const { id, ...dataWithoutId } = data;
@@ -524,6 +629,13 @@ export class DynamicQueryBuilder {
 
     const result = await this.prisma.$queryRawUnsafe(sql, ...values);
     const inserted = (result as any[])[0];
+
+    // Broadcast INSERT event
+    WebSocketService.getInstance().broadcast(
+      `${this.projectId}:${this.collectionSlug}`,
+      "INSERT",
+      { new: inserted }
+    );
 
     // Parse JSON for many-to-many relations
     for (const field of this.schema.fields) {
@@ -766,6 +878,7 @@ export class DynamicQueryBuilder {
   async findMany(
     params: QueryParams = {}
   ): Promise<{ data: any[]; total: number }> {
+    this.validateAccess("read");
     await this.ensureTableExists();
 
     const {
@@ -785,9 +898,23 @@ export class DynamicQueryBuilder {
     let whereClause = "";
     const whereValues: any[] = [];
 
-    // Soft delete filter
+    // Base Conditions array to handle RLS + SoftDelete + User Filters consistently
+    const baseConditions: string[] = [];
+
+    // 1. RLS / Access Filter
+    const accessFilter = this.getAccessFilter("read");
+    if (accessFilter) {
+      baseConditions.push(accessFilter);
+    }
+
+    // 2. Soft delete filter
     if (this.schema.softDelete) {
-      whereClause = 'WHERE "deletedAt" IS NULL';
+      baseConditions.push('"deletedAt" IS NULL');
+    }
+
+    // Initialize whereClause from base conditions
+    if (baseConditions.length > 0) {
+      whereClause = "WHERE " + baseConditions.join(" AND ");
     }
 
     // Advanced filter support
@@ -862,9 +989,57 @@ export class DynamicQueryBuilder {
     );
     const total = parseInt((countResult as any)[0].count);
 
+    // Build SELECT clause with JSON subqueries for relations
+    let selectClause = selectFields;
+
+    // If populate is requested, add subqueries for relations
+    if (populate) {
+      const relationsToPopulate = Array.isArray(populate)
+        ? populate
+        : [populate];
+      const relationColumns: string[] = [];
+
+      // If selectFields is "*", we need to explicity list columns or keep "*" and append relation columns
+      // For simplicity, we keep "*" and append the relation subqueries
+
+      for (const fieldName of relationsToPopulate) {
+        const field = this.schema.fields.find((f) => f.name === fieldName);
+
+        if (field && field.type === FieldType.RELATION && field.relation) {
+          const relatedTableName = `data_${this.projectId.replace(/-/g, "_")}_${
+            field.relation.collection
+          }`;
+
+          if (
+            field.relation.type === "one-to-one" ||
+            field.relation.type === "one-to-many"
+          ) {
+            // Single relation (store ID in main table)
+            // Postgres: row_to_json, MySQL: JSON_OBJECT (simplified support for Postgres mostly here)
+            relationColumns.push(`
+              (
+                SELECT row_to_json(t) FROM (
+                  SELECT * FROM "${relatedTableName}" WHERE id = "${this.tableName}"."${field.name}"
+                ) t
+              ) as "${fieldName}"
+            `);
+          } else if (field.relation.type === "many-to-many") {
+            // Many-to-many (store array of IDs in main table)
+            // We need to unnest the array and join
+            // This is complex in generic SQL, so we fallback to N+1 for many-to-many for now
+            // OR use a Postgres specific array logic
+          }
+        }
+      }
+
+      if (relationColumns.length > 0) {
+        selectClause = `${selectFields}, ${relationColumns.join(", ")}`;
+      }
+    }
+
     // Get data
     const dataSql = `
-      SELECT ${selectFields} FROM "${this.tableName}"
+      SELECT ${selectClause} FROM "${this.tableName}"
       ${whereClause}
       ORDER BY "${sort}" ${order.toUpperCase()}
       LIMIT ${limit} OFFSET ${offset};
@@ -872,37 +1047,56 @@ export class DynamicQueryBuilder {
 
     const data = await this.prisma.$queryRawUnsafe(dataSql, ...whereValues);
 
-    // Parse JSON for many-to-many relations
+    // Parse JSON for many-to-many relations AND populated fields if they come as strings
     const parsedData = (data as any[]).map((record) => {
       const parsed = { ...record };
       for (const field of this.schema.fields) {
+        // Handle many-to-many storage parsing
         if (
           field.type === FieldType.RELATION &&
           field.relation?.type === "many-to-many" &&
           parsed[field.name]
         ) {
           try {
-            parsed[field.name] = JSON.parse(parsed[field.name]);
+            if (typeof parsed[field.name] === "string") {
+              parsed[field.name] = JSON.parse(parsed[field.name]);
+            }
           } catch {
-            // Keep as is if parsing fails
+            // Keep as is
           }
         }
       }
       return parsed;
     });
 
-    // Populate relations if requested
+    // Populate many-to-many relations manually (since we skipped them in SQL)
+    // Also populate standard relations if SQL subquery failed or wasn't used (fallback)
     let finalData = parsedData;
     if (populate) {
       const relationsToPopulate = Array.isArray(populate)
         ? populate
         : [populate];
+      const complexRelations = relationsToPopulate.filter((r) => {
+        const f = this.schema.fields.find((field) => field.name === r);
+        // Only manually populate if it wasn't populated by SQL (check if value is object)
+        // OR if it is many-to-many (which we skipped in SQL)
+        const sampleRecord = parsedData[0];
+        const isAlreadyPopulated =
+          sampleRecord &&
+          sampleRecord[r] &&
+          typeof sampleRecord[r] === "object" &&
+          !Array.isArray(sampleRecord[r]);
 
-      finalData = await Promise.all(
-        parsedData.map((record) =>
-          this.populateRelations(record, relationsToPopulate, this.projectId)
-        )
-      );
+        return f?.relation?.type === "many-to-many" || !isAlreadyPopulated;
+      });
+
+      if (complexRelations.length > 0) {
+        finalData = await Promise.all(
+          parsedData.map((record) =>
+            this.populateRelations(record, complexRelations, this.projectId)
+          )
+        );
+      }
     }
 
     return {
@@ -918,15 +1112,61 @@ export class DynamicQueryBuilder {
     id: string,
     populate?: string | string[]
   ): Promise<any | null> {
+    this.validateAccess("read");
     await this.ensureTableExists();
 
     let whereClause = '"id" = $1';
+
+    // RLS Filter
+    const accessFilter = this.getAccessFilter("read");
+    if (accessFilter) {
+      whereClause += ` AND ${accessFilter}`;
+    }
 
     if (this.schema.softDelete) {
       whereClause += ' AND "deletedAt" IS NULL';
     }
 
-    const sql = `SELECT * FROM "${this.tableName}" WHERE ${whereClause} LIMIT 1;`;
+    // Build SELECT clause with JSON subqueries for relations
+    let selectClause = "*";
+
+    // If populate is requested, add subqueries for relations
+    if (populate) {
+      const relationsToPopulate = Array.isArray(populate)
+        ? populate
+        : [populate];
+      const relationColumns: string[] = [];
+
+      for (const fieldName of relationsToPopulate) {
+        const field = this.schema.fields.find((f) => f.name === fieldName);
+
+        if (field && field.type === FieldType.RELATION && field.relation) {
+          const relatedTableName = `data_${this.projectId.replace(/-/g, "_")}_${
+            field.relation.collection
+          }`;
+
+          if (
+            field.relation.type === "one-to-one" ||
+            field.relation.type === "one-to-many"
+          ) {
+            // Single relation
+            relationColumns.push(`
+              (
+                SELECT row_to_json(t) FROM (
+                  SELECT * FROM "${relatedTableName}" WHERE id = "${this.tableName}"."${field.name}"
+                ) t
+              ) as "${fieldName}"
+            `);
+          }
+        }
+      }
+
+      if (relationColumns.length > 0) {
+        selectClause = `*, ${relationColumns.join(", ")}`;
+      }
+    }
+
+    const sql = `SELECT ${selectClause} FROM "${this.tableName}" WHERE ${whereClause} LIMIT 1;`;
     const result = await this.prisma.$queryRawUnsafe(sql, id);
 
     const record = (result as any[])[0] || null;
@@ -944,23 +1184,32 @@ export class DynamicQueryBuilder {
         parsed[field.name]
       ) {
         try {
-          parsed[field.name] = JSON.parse(parsed[field.name]);
+          if (typeof parsed[field.name] === "string") {
+            parsed[field.name] = JSON.parse(parsed[field.name]);
+          }
         } catch {
           // Keep as is if parsing fails
         }
       }
     }
 
-    // Populate relations if requested
+    // Fallback populate for many-to-many or if SQL subquery failed
     if (populate) {
       const relationsToPopulate = Array.isArray(populate)
         ? populate
         : [populate];
-      return this.populateRelations(
-        parsed,
-        relationsToPopulate,
-        this.projectId
-      );
+      const complexRelations = relationsToPopulate.filter((r) => {
+        const f = this.schema.fields.find((field) => field.name === r);
+        const isAlreadyPopulated =
+          parsed[r] &&
+          typeof parsed[r] === "object" &&
+          !Array.isArray(parsed[r]);
+        return f?.relation?.type === "many-to-many" || !isAlreadyPopulated;
+      });
+
+      if (complexRelations.length > 0) {
+        return this.populateRelations(parsed, complexRelations, this.projectId);
+      }
     }
 
     return parsed;
@@ -970,7 +1219,15 @@ export class DynamicQueryBuilder {
    * Update by ID (updated with relation validation)
    */
   async update(id: string, data: Record<string, any>): Promise<any> {
+    this.validateAccess("update");
     await this.ensureTableExists();
+
+    let whereClause = '"id" = $1';
+    // RLS Filter
+    const accessFilter = this.getAccessFilter("update");
+    if (accessFilter) {
+      whereClause += ` AND ${accessFilter}`;
+    }
 
     // Validate only provided fields
     const partialValidation = this.validateData(data);
@@ -1045,12 +1302,19 @@ export class DynamicQueryBuilder {
     const sql = `
       UPDATE "${this.tableName}"
       SET ${sets}
-      WHERE "id" = $1
+      WHERE ${whereClause}
       RETURNING *;
     `;
 
     const result = await this.prisma.$queryRawUnsafe(sql, ...values);
     const updated = (result as any[])[0];
+
+    // Broadcast UPDATE event
+    WebSocketService.getInstance().broadcast(
+      `${this.projectId}:${this.collectionSlug}`,
+      "UPDATE",
+      { new: updated }
+    );
 
     // Parse JSON for many-to-many relations
     for (const field of this.schema.fields) {
@@ -1074,23 +1338,58 @@ export class DynamicQueryBuilder {
    * Delete by ID (soft or hard delete)
    */
   async delete(id: string): Promise<boolean> {
+    this.validateAccess("delete");
     await this.ensureTableExists();
+
+    const accessFilter = this.getAccessFilter("delete");
+    const extraFilter = accessFilter ? ` AND ${accessFilter}` : "";
 
     if (this.schema.softDelete) {
       // Soft delete
       const sql = `
         UPDATE "${this.tableName}"
         SET "deletedAt" = $1
-        WHERE "id" = $2
+        WHERE "id" = $2 ${extraFilter}
         RETURNING *;
       `;
       const result = await this.prisma.$queryRawUnsafe(sql, new Date(), id);
+      const deleted = (result as any[])[0];
+
+      if (deleted) {
+        WebSocketService.getInstance().broadcast(
+          `${this.projectId}:${this.collectionSlug}`,
+          "DELETE",
+          { old: deleted }
+        );
+      }
+
       return (result as any[]).length > 0;
     } else {
-      // Hard delete
-      const sql = `DELETE FROM "${this.tableName}" WHERE "id" = $1;`;
-      await this.prisma.$queryRawUnsafe(sql, id);
-      return true;
+      // Hard delete - need to fetch data first for broadcast if we want to send "old" data
+      // For now, just send ID
+      // NOTE: findById already checks access permissions, so we are safe to call it
+      let oldData = null;
+      try {
+        oldData = await this.findById(id);
+      } catch (e) {
+        // Ignore, maybe not found or permission denied (though we check permission above)
+      }
+
+      const sql = `DELETE FROM "${this.tableName}" WHERE "id" = $1 ${extraFilter};`;
+      const result = await this.prisma.$executeRawUnsafe(sql, id); // Use executeRaw for DELETE
+
+      // Check if row count > 0
+      if (result > 0) {
+        if (oldData) {
+          WebSocketService.getInstance().broadcast(
+            `${this.projectId}:${this.collectionSlug}`,
+            "DELETE",
+            { old: oldData }
+          );
+        }
+        return true;
+      }
+      return false;
     }
   }
 
@@ -1397,7 +1696,13 @@ export class DynamicQueryBuilder {
   async executeTransaction<T>(
     operations: ((prisma: PrismaClient) => Promise<any>)[]
   ): Promise<T[]> {
-    return await this.prisma.$transaction(operations.map((op) => op(this.prisma)));
+    return await this.prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const op of operations) {
+        results.push(await op(tx as PrismaClient));
+      }
+      return results as T[];
+    });
   }
 
   /**
@@ -1462,7 +1767,10 @@ export class DynamicQueryBuilder {
     const processedData: Record<string, any> = { ...convertedData };
 
     for (const field of this.schema.fields) {
-      if (field.type === FieldType.RELATION && field.relation?.type === "many-to-many") {
+      if (
+        field.type === FieldType.RELATION &&
+        field.relation?.type === "many-to-many"
+      ) {
         const value = processedData[field.name];
         if (Array.isArray(value)) {
           processedData[field.name] = JSON.stringify(value);
@@ -1500,7 +1808,10 @@ export class DynamicQueryBuilder {
     const processedData: Record<string, any> = { ...convertedData };
 
     for (const field of this.schema.fields) {
-      if (field.type === FieldType.RELATION && field.relation?.type === "many-to-many") {
+      if (
+        field.type === FieldType.RELATION &&
+        field.relation?.type === "many-to-many"
+      ) {
         const value = processedData[field.name];
         if (value !== undefined && Array.isArray(value)) {
           processedData[field.name] = JSON.stringify(value);
@@ -1562,4 +1873,3 @@ export class DynamicQueryBuilder {
     return this.prisma;
   }
 }
-

@@ -68,6 +68,10 @@ export function FunctionEditorPage() {
   const [editorTheme, setEditorTheme] = useState<"vs-dark" | "light">(
     "vs-dark"
   );
+  const [aiVisible, setAiVisible] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -313,6 +317,13 @@ export function FunctionEditorPage() {
               <Button
                 type="button"
                 variant="secondary"
+                onClick={() => setAiVisible((v) => !v)}
+              >
+                {aiVisible ? "✖ Close AI" : "✨ Generate with AI"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
                 onClick={() =>
                   setEditorTheme(
                     editorTheme === "vs-dark" ? "light" : "vs-dark"
@@ -331,6 +342,71 @@ export function FunctionEditorPage() {
               </Button>
             </div>
           </div>
+
+          {aiVisible && (
+            <div className="mb-4 border border-blue-200 bg-blue-50 rounded-lg p-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Describe the function you want to generate
+              </label>
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder={`Eg: Create a function that retrieves the last 20 records from the \"orders\" collection based on the project slug, calculates the total revenue, and returns a summary.`}
+                rows={3}
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+              {aiError && (
+                <div className="mt-2 text-sm text-red-700">{aiError}</div>
+              )}
+              <div className="mt-2 flex gap-2">
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    setAiError("");
+                    if (!aiPrompt.trim()) {
+                      setAiError("Prompt tidak boleh kosong");
+                      return;
+                    }
+                    try {
+                      setAiLoading(true);
+                      const res = await api.post("/ai/generate-function", {
+                        prompt: aiPrompt,
+                        language: formData.language || "typescript",
+                        entrypoint: formData.entrypoint || "handler",
+                        includeScaffold: true,
+                        currentCode: formData.sourceCode || undefined,
+                      });
+                      const code = res.data?.code || "";
+                      if (code) {
+                        setFormData({ ...formData, sourceCode: code });
+                      }
+                    } catch (err: any) {
+                      setAiError(
+                        err.response?.data?.error ||
+                          "Gagal generate kode dari AI"
+                      );
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  }}
+                  disabled={aiLoading}
+                >
+                  {aiLoading ? "Generating..." : "Generate & Replace Code"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setAiVisible(false)}
+                >
+                  Done
+                </Button>
+              </div>
+              <p className="text-xs text-blue-800 mt-2">
+                Code generated will replace the editor content. You can validate
+                it using the "Validate" button on the right.
+              </p>
+            </div>
+          )}
 
           {validationError && (
             <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">

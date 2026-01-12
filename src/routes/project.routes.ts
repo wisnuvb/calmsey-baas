@@ -4,6 +4,8 @@ import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth.middleware";
 import { generateSlug, generateApiKey } from "../lib/utils";
 import { DatabaseManagerService } from "../lib/database-manager.service";
+import { DynamicQueryBuilder } from "../lib/dynamic-query-builder";
+import { CollectionSchema, FieldType } from "../types";
 
 // Initialize database manager
 const dbManager = new DatabaseManagerService(prisma);
@@ -32,6 +34,64 @@ const updateProjectSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
 });
+
+// Helper to create default 'users' collection for tenant auth
+async function createDefaultCollections(project: any, prisma: any) {
+  const usersSchema: CollectionSchema = {
+    fields: [
+      {
+        name: "email",
+        type: FieldType.EMAIL,
+        required: true,
+        unique: true,
+        indexed: true,
+      },
+      { name: "password", type: FieldType.STRING, required: true }, // Hashed password
+      {
+        name: "role",
+        type: FieldType.STRING,
+        required: true,
+        default: "user",
+      }, // e.g. "SUPPLIER", "BUYER"
+      { name: "name", type: FieldType.STRING, required: false },
+      { name: "avatar", type: FieldType.URL, required: false },
+      { name: "metadata", type: FieldType.JSON, required: false },
+      { name: "createdAt", type: FieldType.DATETIME, required: false },
+      { name: "updatedAt", type: FieldType.DATETIME, required: false },
+    ],
+    timestamps: true,
+    softDelete: false,
+  };
+
+  try {
+    await prisma.collection.create({
+      data: {
+        name: "Users",
+        slug: "users",
+        schema: usersSchema as any,
+        projectId: project.id,
+        rules: {
+          read: "owner", // User can read own profile
+          create: "public", // Registration is public
+          update: "owner", // User can update own profile
+          delete: "admin", // Only admin can delete users
+        },
+      },
+    });
+
+    // Create physical table
+    const qb = new DynamicQueryBuilder(
+      prisma,
+      project.id,
+      "users",
+      usersSchema
+    );
+    await qb.createTable();
+  } catch (error) {
+    console.error("Failed to create default users collection:", error);
+    // Don't fail the request, just log error
+  }
+}
 
 export async function projectRoutes(fastify: FastifyInstance) {
   // Get all projects for current user
@@ -198,6 +258,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
               },
             });
 
+            // Initialize default collections (users)
+            await createDefaultCollections(project, prisma);
+
             return reply.status(201).send({
               success: true,
               data: {
@@ -248,6 +311,9 @@ export async function projectRoutes(fastify: FastifyInstance) {
               apiKeys: true,
             },
           });
+
+          // Initialize default collections (users)
+          await createDefaultCollections(project, prisma);
 
           return reply.status(201).send({
             success: true,

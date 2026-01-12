@@ -16,7 +16,11 @@ import { webhookRoutes } from "./routes/webhook.routes";
 import { emailRoutes } from "./routes/email.routes";
 import { functionRoutes } from "./routes/function.routes";
 import { functionInvokeRoutes } from "./routes/function-invoke.routes";
+import { aiRoutes } from "./routes/ai.routes";
 import { registerRateLimit } from "./middleware/rate-limit.middleware";
+
+import websocket from "@fastify/websocket";
+import { WebSocketService } from "./lib/websocket.service";
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +37,9 @@ const fastify = Fastify({
 
 // Register plugins
 async function registerPlugins() {
+  // Websocket support
+  await fastify.register(websocket);
+
   // CORS
   await fastify.register(cors, {
     origin: true, // Allow all origins in development
@@ -116,6 +123,7 @@ async function registerPlugins() {
         { name: "webhooks", description: "Webhook management" },
         { name: "email", description: "Email service" },
         { name: "functions", description: "Serverless functions" },
+        { name: "ai", description: "AI-assisted code generation" },
       ],
       components: {
         securitySchemes: {
@@ -196,8 +204,16 @@ async function registerRoutes() {
   await fastify.register(functionRoutes, { prefix: "/api/functions" });
   await fastify.register(functionInvokeRoutes, { prefix: "/api/invoke" });
 
+  // AI routes
+  await fastify.register(aiRoutes, { prefix: "/api/ai" });
+
   // Dynamic API routes (per project)
   await fastify.register(dynamicApiRoutes, { prefix: "/api/data" });
+
+  // Websocket route
+  fastify.get("/ws", { websocket: true }, (connection, req) => {
+    WebSocketService.getInstance().handleConnection(connection.socket);
+  });
 }
 
 // Start server

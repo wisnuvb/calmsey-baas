@@ -16,14 +16,38 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String
+  password  String? // Made optional for OAuth users
   name      String?
   role      UserRole @default(USER)
+  avatarUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   projects Project[]
   apiKeys  ApiKey[]
+  accounts Account[] // OAuth accounts
+}
+
+model Account {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider          String // e.g. "google", "github"
+  providerAccountId String // ID from the provider
+
+  accessToken  String? @db.Text
+  refreshToken String? @db.Text
+  expiresAt    Int?
+  tokenType    String?
+  scope        String?
+  idToken      String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 enum UserRole {
@@ -77,6 +101,7 @@ model Collection {
   name      String // e.g., "products", "posts", "users"
   slug      String // URL-friendly name
   schema    Json // JSON schema definition
+  rules     Json? // Access control rules: { "read": "public", "write": "authenticated", ... }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

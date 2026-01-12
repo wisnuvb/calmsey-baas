@@ -1,8 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma";
-import { authenticateApiKey } from "../middleware/auth.middleware";
+import {
+  authenticateApiKey,
+  authenticateDynamicRequest,
+} from "../middleware/auth.middleware";
 import { DynamicQueryBuilder } from "../lib/dynamic-query-builder";
-import { CollectionSchema, QueryParams } from "../types";
+import { CollectionSchema, QueryParams, AccessControlRules } from "../types";
 import {
   createRateLimitConfig,
   rateLimitByApiKey,
@@ -18,7 +21,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
    * Requires X-API-Key header for authentication
    */
 
-  // Rate limit config untuk dynamic API (per API key)
+  // Rate limit config for dynamic API (per API key)
   const apiRateLimit = createRateLimitConfig({
     max: parseInt(process.env.API_RATE_LIMIT_MAX || "1000"), // 1000 requests
     timeWindow: process.env.API_RATE_LIMIT_WINDOW || "1 hour",
@@ -29,7 +32,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:projectSlug/:collectionSlug",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: apiRateLimit,
       },
@@ -106,6 +109,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         // Parse query parameters
@@ -149,7 +155,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:projectSlug/:collectionSlug/:id",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: apiRateLimit,
       },
@@ -176,8 +182,8 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
                 type: "object",
                 properties: {
                   id: { type: "string" },
-                  // Add other properties of the item here
                 },
+                additionalProperties: true,
               },
             },
           },
@@ -233,6 +239,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const queryParams = request.query as any;
@@ -269,7 +278,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/:projectSlug/:collectionSlug",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: createRateLimitConfig({
           max: parseInt(process.env.API_WRITE_RATE_LIMIT_MAX || "100"),
@@ -358,6 +367,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         // Log for debugging
@@ -457,7 +469,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.patch(
     "/:projectSlug/:collectionSlug/:id",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: createRateLimitConfig({
           max: parseInt(process.env.API_WRITE_RATE_LIMIT_MAX || "100"),
@@ -481,13 +493,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
         },
         body: {
           type: "object",
-          required: ["data"],
-          properties: {
-            data: {
-              type: "object",
-              description: "Data to update the item",
-            },
-          },
+          additionalProperties: true, // Allow any properties based on collection schema
         },
         response: {
           200: {
@@ -498,8 +504,8 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
                 type: "object",
                 properties: {
                   id: { type: "string" },
-                  // Add other properties of the updated item here
                 },
+                additionalProperties: true,
               },
               migration: {
                 type: "object",
@@ -564,6 +570,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const item = await queryBuilder.update(id, data);
@@ -601,7 +610,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.delete(
     "/:projectSlug/:collectionSlug/:id",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: createRateLimitConfig({
           max: parseInt(process.env.API_WRITE_RATE_LIMIT_MAX || "100"),
@@ -683,6 +692,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const deleted = await queryBuilder.delete(id);
@@ -712,7 +724,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/:projectSlug/:collectionSlug/bulk",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: createRateLimitConfig({
           max: parseInt(process.env.API_WRITE_RATE_LIMIT_MAX || "100"),
@@ -776,6 +788,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const results = [];
@@ -815,7 +830,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.patch(
     "/:projectSlug/:collectionSlug/bulk",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: createRateLimitConfig({
           max: parseInt(process.env.API_WRITE_RATE_LIMIT_MAX || "100"),
@@ -880,6 +895,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         // Find items matching filter
@@ -923,7 +941,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.delete(
     "/:projectSlug/:collectionSlug/bulk",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: createRateLimitConfig({
           max: parseInt(process.env.API_WRITE_RATE_LIMIT_MAX || "100"),
@@ -983,6 +1001,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const filter = queryParams.filter ? JSON.parse(queryParams.filter) : {};
@@ -1028,7 +1049,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:projectSlug/:collectionSlug/count",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       schema: {
         tags: ["data"],
         summary: "Count items",
@@ -1081,6 +1102,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const filter = queryParams.filter ? JSON.parse(queryParams.filter) : {};
@@ -1108,7 +1132,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:projectSlug/:collectionSlug/aggregate",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       schema: {
         tags: ["data"],
         summary: "Aggregate data",
@@ -1167,6 +1191,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const filter = queryParams.filter ? JSON.parse(queryParams.filter) : {};
@@ -1226,7 +1253,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:projectSlug/:collectionSlug/stats",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       schema: {
         tags: ["data"],
         summary: "Get collection statistics",
@@ -1279,6 +1306,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const filter = queryParams.filter
@@ -1305,7 +1335,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/:projectSlug/:collectionSlug/export",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       schema: {
         tags: ["data"],
         summary: "Export data",
@@ -1364,6 +1394,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const format = (queryParams.format || "json") as
@@ -1406,7 +1439,7 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/:projectSlug/:collectionSlug/import",
     {
-      onRequest: [authenticateApiKey],
+      onRequest: [authenticateDynamicRequest],
       config: {
         rateLimit: createRateLimitConfig({
           max: parseInt(process.env.API_WRITE_RATE_LIMIT_MAX || "100"),
@@ -1460,6 +1493,9 @@ export async function dynamicApiRoutes(fastify: FastifyInstance) {
           project.id,
           collectionSlug,
           schema
+        ).setAccessControl(
+          (request as any).accessContext,
+          (collection as any).rules
         );
 
         const data = await request.file();

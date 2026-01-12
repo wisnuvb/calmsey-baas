@@ -239,7 +239,7 @@ export default function ApiKeysPage() {
                 }
                 placeholder="e.g., Production Key, Development Key"
               />
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800 hidden">
                 ⚠️ Make sure to copy your API key after creation. You won't be
                 able to see it again!
               </div>

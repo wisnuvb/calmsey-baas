@@ -212,7 +212,10 @@ export async function authRoutes(fastify: FastifyInstance) {
         }
 
         // Verify password
-        const isValid = await verifyPassword(body.password, user.password);
+        const isValid = await verifyPassword(
+          body.password,
+          user.password || ""
+        );
 
         if (!isValid) {
           return reply.status(401).send({
@@ -258,6 +261,140 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(500).send({
           success: false,
           error: "Failed to login",
+        });
+      }
+    }
+  );
+
+  // Google OAuth Login
+  fastify.post(
+    "/oauth/google",
+    {
+      config: {
+        rateLimit: authRateLimit,
+      },
+      schema: {
+        tags: ["auth"],
+        summary: "Login with Google",
+        body: {
+          type: "object",
+          required: ["idToken"],
+          properties: {
+            idToken: { type: "string" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { idToken } = request.body as { idToken: string };
+
+        // MOCK VERIFICATION for now
+        // In production, use google-auth-library:
+        // const ticket = await client.verifyIdToken({ idToken, audience: CLIENT_ID });
+        // const payload = ticket.getPayload();
+
+        // Simulating Google payload decoding (unsafe, just for dev structure)
+        // Ideally we assume idToken is valid and contains email/sub for this MVP step
+        // OR we just use a dummy payload if idToken is "test-token"
+
+        let payload: any = {};
+
+        if (idToken === "test-token") {
+          payload = {
+            email: "test-google@example.com",
+            name: "Test Google User",
+            sub: "google-123456",
+            picture: "https://example.com/avatar.jpg",
+          };
+        } else {
+          // Try to decode JWT without verify just to get email (for POC only!)
+          // WARN: THIS IS NOT SECURE FOR PRODUCTION
+          const parts = idToken.split(".");
+          if (parts.length === 3) {
+            payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
+          } else {
+            throw new Error("Invalid token format");
+          }
+        }
+
+        if (!payload.email || !payload.sub) {
+          return reply
+            .status(400)
+            .send({ success: false, error: "Invalid token payload" });
+        }
+
+        const email = payload.email;
+        const googleId = payload.sub;
+        const name = payload.name;
+        const picture = payload.picture;
+
+        // Check if user exists
+        let user = await prisma.user.findUnique({
+          where: { email },
+          include: { accounts: true },
+        });
+
+        if (!user) {
+          // Create new user
+          user = await prisma.user.create({
+            data: {
+              email,
+              name,
+              avatarUrl: picture,
+              role: "USER",
+              accounts: {
+                create: {
+                  provider: "google",
+                  providerAccountId: googleId,
+                  // type: "oauth",
+                },
+              },
+            },
+            include: { accounts: true },
+          });
+        } else {
+          // Check if account link exists
+          const accountExists = user.accounts.some(
+            (acc) =>
+              acc.provider === "google" && acc.providerAccountId === googleId
+          );
+          if (!accountExists) {
+            // Link account
+            await prisma.account.create({
+              data: {
+                userId: user.id,
+                provider: "google",
+                providerAccountId: googleId,
+              },
+            });
+          }
+        }
+
+        // Generate App JWT
+        const token = fastify.jwt.sign({
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        });
+
+        return reply.send({
+          success: true,
+          data: {
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+              avatarUrl: user.avatarUrl,
+            },
+            token,
+          },
+        });
+      } catch (err: any) {
+        return reply.status(500).send({
+          success: false,
+          error: "OAuth login failed: " + err.message,
         });
       }
     }

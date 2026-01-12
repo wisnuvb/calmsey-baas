@@ -40,6 +40,8 @@ type ApiEndpoint = {
   queryParams?: string[];
 };
 
+import { RealtimeTester } from "../components/RealtimeTester";
+
 export default function CollectionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -57,6 +59,22 @@ export default function CollectionDetailPage() {
   const [itemId, setItemId] = useState<string>("");
   const [queryParams, setQueryParams] = useState<Record<string, string>>({});
   const [bodyType, setBodyType] = useState<"raw" | "form-data">("raw");
+
+  // Rules state
+  const [rules, setRules] = useState({
+    read: "public",
+    create: "authenticated",
+    update: "owner",
+    delete: "admin",
+  });
+  const [savingRules, setSavingRules] = useState(false);
+  const [showRulesSaved, setShowRulesSaved] = useState(false);
+
+  useEffect(() => {
+    if (collection && (collection as any).rules) {
+      setRules((collection as any).rules);
+    }
+  }, [collection]);
 
   useEffect(() => {
     if (id) {
@@ -136,6 +154,25 @@ export default function CollectionDetailPage() {
       }
     } catch (error) {
       console.error("Failed to fetch API keys:", error);
+    }
+  };
+
+  const saveRules = async () => {
+    if (!collection) return;
+    setSavingRules(true);
+    setShowRulesSaved(false);
+    try {
+      await api.patch(`/collections/${collection.id}`, {
+        rules,
+      });
+      setShowRulesSaved(true);
+      setTimeout(() => setShowRulesSaved(false), 3000);
+      fetchCollection();
+    } catch (e) {
+      console.error("Failed to update rules:", e);
+      alert("Failed to update rules");
+    } finally {
+      setSavingRules(false);
     }
   };
 
@@ -576,6 +613,95 @@ export default function CollectionDetailPage() {
         </Card>
 
         <Card>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-100 p-1.5 rounded-lg">
+                <svg
+                  className="w-5 h-5 text-orange-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900">Access Control</h3>
+            </div>
+            {showRulesSaved && (
+              <span className="text-xs text-green-600 font-medium animate-pulse">
+                Saved!
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            {["read", "create", "update", "delete"].map((action) => (
+              <div key={action} className="flex items-center justify-between">
+                <label className="text-sm text-gray-600 capitalize w-16 font-medium">
+                  {action}
+                </label>
+                <div className="flex-1 ml-2 flex items-center gap-2">
+                  <select
+                    value={
+                      ["public", "authenticated", "owner", "admin"].includes(
+                        (rules as any)[action] || "public"
+                      )
+                        ? (rules as any)[action] || "public"
+                        : "custom"
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val !== "custom") {
+                        setRules({ ...rules, [action]: val });
+                      } else {
+                        setRules({ ...rules, [action]: "role:" });
+                      }
+                    }}
+                    className="text-xs border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1"
+                  >
+                    <option value="public">Public</option>
+                    <option value="authenticated">Authenticated</option>
+                    <option value="owner">Owner</option>
+                    <option value="admin">Admin Only</option>
+                    <option value="custom">Custom Role...</option>
+                  </select>
+
+                  {!["public", "authenticated", "owner", "admin"].includes(
+                    (rules as any)[action] || "public"
+                  ) && (
+                    <input
+                      type="text"
+                      value={(rules as any)[action] || ""}
+                      onChange={(e) =>
+                        setRules({ ...rules, [action]: e.target.value })
+                      }
+                      placeholder="role:manager"
+                      className="flex-1 text-xs border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2"
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+
+            <div className="pt-2 mt-2 border-t border-gray-100">
+              <Button
+                size="sm"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={saveRules}
+                disabled={savingRules}
+              >
+                {savingRules ? "Saving..." : "Save Rules"}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
           <div className="flex items-center gap-3 mb-4">
             <Code className="w-5 h-5 text-purple-600" />
             <h3 className="font-semibold text-gray-900">API Base URL</h3>
@@ -640,6 +766,11 @@ export default function CollectionDetailPage() {
         </Card>
       </div>
 
+      {/* Realtime Tester Section */}
+      <div className="mb-6">
+        <RealtimeTester project={project} collection={collection} />
+      </div>
+
       {/* API Documentation */}
       <Card>
         <h2 className="text-xl font-bold text-gray-900 mb-6">
@@ -689,6 +820,7 @@ export default function CollectionDetailPage() {
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                   onClick={() => {
+                    setResponse(null);
                     setSelectedEndpoint(endpoint);
                     if (
                       endpoint.method === "POST" ||
@@ -733,7 +865,7 @@ export default function CollectionDetailPage() {
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-600 font-bold">
                     {endpoint.description}
                   </p>
                 </div>
@@ -751,26 +883,30 @@ export default function CollectionDetailPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     API Key
                   </label>
-                  <input
-                    type="text"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Enter your API key"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {apiKeys.length > 1 && (
-                    <select
+
+                  <div className="flex items-center gap-2">
+                    {apiKeys.length > 1 && (
+                      <select
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-44"
+                      >
+                        {apiKeys.map((key) => (
+                          <option key={key.id} value={key.key}>
+                            {key.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <input
+                      type="text"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {apiKeys.map((key) => (
-                        <option key={key.id} value={key.key}>
-                          {key.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                      placeholder="Enter your API key"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled
+                    />
+                  </div>
                 </div>
 
                 {/* Item ID Input for endpoints that require ID */}

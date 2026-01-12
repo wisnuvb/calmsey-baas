@@ -205,7 +205,7 @@ export default function DashboardPage() {
       {/* Getting Started / Quick Actions */}
       {projects.length === 0 ? (
         <Card>
-          <div className="text-center py-12">
+          <div className="text-center flex flex-col items-center justify-center py-12">
             <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">🚀</span>
             </div>
@@ -414,7 +414,7 @@ export default function DashboardPage() {
                 </Link>
               ))}
               {projects.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 flex flex-col items-center justify-center">
                   <p>No projects yet</p>
                   <Link
                     to="/projects"

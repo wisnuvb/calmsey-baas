@@ -146,3 +146,18 @@ export interface FunctionLogEntry {
   logs?: string;
   createdAt: Date;
 }
+
+// Access Control Rules
+export type AccessRule =
+  | "public" // Anyone can access
+  | "authenticated" // Any authenticated user (JWT)
+  | "owner" // Only the creator (user_id match)
+  | "admin" // Only project admin (API Key)
+  | string; // Dynamic role e.g. "role:manager"
+
+export interface AccessControlRules {
+  read?: AccessRule;
+  create?: AccessRule;
+  update?: AccessRule;
+  delete?: AccessRule;
+}

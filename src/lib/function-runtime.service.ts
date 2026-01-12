@@ -57,6 +57,7 @@ export interface FunctionConfig {
 export class FunctionRuntimeService {
   private bundleCache: Map<string, string> = new Map();
   private bundleDir: string;
+  private workerBundleCode?: string;
 
   constructor() {
     // Create bundle directory if not exists
@@ -74,7 +75,8 @@ export class FunctionRuntimeService {
   }
 
   /**
-   * Compile TypeScript to JavaScript using esbuild
+   * Compile/transpile TypeScript to plain CommonJS JavaScript using esbuild.transform
+   * We avoid bundling to prevent require shims that can clash in the sandbox.
    */
   private async compileFunction(
     sourceCode: string,
@@ -95,25 +97,16 @@ export class FunctionRuntimeService {
     }
 
     try {
-      // Compile TypeScript to JavaScript
-      const result = await esbuild.build({
-        stdin: {
-          contents: sourceCode,
-          loader: "ts",
-          resolveDir: process.cwd(),
-        },
-        bundle: true, // Don't bundle dependencies (we'll provide them)
-        platform: "node",
-        target: "node20",
+      // Transpile TS to CJS without bundling to avoid require redefinitions
+      const result = await esbuild.transform(sourceCode, {
+        loader: "ts",
         format: "cjs",
-        write: false,
-        minify: false,
+        target: "node20",
         sourcemap: false,
-        // Allow these external modules
-        external: ["@prisma/client", "zod", "nanoid"],
+        minify: false,
       });
 
-      const compiledCode = result.outputFiles[0].text;
+      const compiledCode = result.code;
 
       // Save to disk for caching
       writeFileSync(bundlePath, compiledCode, "utf-8");
@@ -124,6 +117,47 @@ export class FunctionRuntimeService {
       return compiledCode;
     } catch (error: any) {
       throw new Error(`Compilation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Compile the TS worker to JS (once) and cache the code string
+   */
+  private async getWorkerBundleCode(): Promise<string> {
+    if (this.workerBundleCode) return this.workerBundleCode;
+
+    const workerTsPath = join(__dirname, "function.worker.ts");
+
+    try {
+      const result = await esbuild.build({
+        entryPoints: [workerTsPath],
+        bundle: true,
+        platform: "node",
+        target: "node20",
+        format: "cjs",
+        write: false,
+        minify: false,
+        sourcemap: false,
+        external: ["@prisma/client"],
+      });
+
+      this.workerBundleCode = result.outputFiles[0].text;
+      return this.workerBundleCode;
+    } catch (err: any) {
+      // As a fallback, try reading precompiled JS next to this file (prod build)
+      try {
+        const workerJsPath = join(__dirname, "function.worker.js");
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const code = readFileSync(workerJsPath, "utf-8");
+        this.workerBundleCode = code;
+        return code;
+      } catch (fallbackErr) {
+        throw new Error(
+          `Failed to prepare worker code: ${err?.message || err} | fallback: ${
+            (fallbackErr as any)?.message || fallbackErr
+          }`
+        );
+      }
     }
   }
 
@@ -178,37 +212,71 @@ export class FunctionRuntimeService {
       const hash = this.generateHash(config.sourceCode);
       const compiledCode = await this.compileFunction(config.sourceCode, hash);
 
-      // Create context
-      const context = this.createContext(config, prisma, {
-        body: request.body || {},
-        headers: request.headers || {},
-        method: request.method || "POST",
-        query: request.query || {},
-        params: request.params || {},
-      });
+      // Execute function using Worker Thread
+      // We don't use the passed prisma client, the worker creates its own
+      const result: any = await new Promise(async (resolve, reject) => {
+        const workerCode = await this.getWorkerBundleCode();
+        const worker = new Worker(workerCode, {
+          eval: true,
+          workerData: {},
+        });
 
-      // Execute function with timeout
-      const result = await this.executeWithTimeout(
-        compiledCode,
-        config.entrypoint,
-        context,
-        config.timeout
-      );
+        const timeoutId = setTimeout(() => {
+          worker.terminate();
+          reject(
+            new Error(`Function execution timeout after ${config.timeout}ms`)
+          );
+        }, config.timeout);
+
+        worker.on("message", (msg) => {
+          clearTimeout(timeoutId);
+          worker.terminate();
+          resolve(msg);
+        });
+
+        worker.on("error", (err) => {
+          clearTimeout(timeoutId);
+          worker.terminate();
+          reject(err);
+        });
+
+        worker.on("exit", (code) => {
+          if (code !== 0) {
+            clearTimeout(timeoutId);
+            reject(new Error(`Worker stopped with exit code ${code}`));
+          }
+        });
+
+        // Send payload to worker
+        worker.postMessage({
+          code: compiledCode,
+          entrypoint: config.entrypoint,
+          timeout: config.timeout,
+          context: {
+            projectId: config.projectId,
+            projectSlug: config.projectSlug,
+            env: config.envVars || {},
+            request: {
+              body: request.body || {},
+              headers: request.headers || {},
+              method: request.method || "POST",
+              query: request.query || {},
+              params: request.params || {},
+            },
+          },
+        });
+      });
 
       const duration = Date.now() - startTime;
 
-      // Capture logs from context
-      if (typeof context.log === "function") {
-        // Logs are captured in the context object
-        context.log(logs);
-      }
-
       return {
-        success: true,
-        data: result,
-        logs: logs,
+        success: result.success,
+        data: result.data,
+        logs: result.logs || [],
         duration,
-        status: "SUCCESS",
+        status: result.success ? "SUCCESS" : "ERROR",
+        error: result.error,
+        errorStack: result.errorStack,
       };
     } catch (error: any) {
       const duration = Date.now() - startTime;

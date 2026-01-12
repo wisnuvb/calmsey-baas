@@ -46,6 +46,14 @@ const createCollectionSchema = z.object({
 
 const updateCollectionSchema = z.object({
   name: z.string().min(1).optional(),
+  rules: z
+    .object({
+      read: z.string().optional(),
+      create: z.string().optional(),
+      update: z.string().optional(),
+      delete: z.string().optional(),
+    })
+    .optional(),
   schema: z
     .object({
       fields: z.array(fieldDefinitionSchema),
@@ -159,6 +167,7 @@ export async function collectionRoutes(fastify: FastifyInstance) {
             name: collection.name,
             slug: collection.slug,
             schema: schema,
+            rules: collection.rules, // Add rules
             projectId: collection.projectId,
             createdAt: collection.createdAt.toISOString(),
             updatedAt: collection.updatedAt.toISOString(),
@@ -298,6 +307,7 @@ export async function collectionRoutes(fastify: FastifyInstance) {
           name: collection.name,
           slug: collection.slug,
           schema: schema,
+          rules: collection.rules, // Add rules
           projectId: collection.projectId,
           createdAt: collection.createdAt.toISOString(),
           updatedAt: collection.updatedAt.toISOString(),
@@ -573,6 +583,15 @@ export async function collectionRoutes(fastify: FastifyInstance) {
           type: "object",
           properties: {
             name: { type: "string" },
+            rules: {
+              type: "object",
+              properties: {
+                read: { type: "string" },
+                create: { type: "string" },
+                update: { type: "string" },
+                delete: { type: "string" },
+              },
+            },
             schema: {
               type: "object",
               properties: {
@@ -630,6 +649,10 @@ export async function collectionRoutes(fastify: FastifyInstance) {
 
         if (body.name) {
           updateData.name = body.name;
+        }
+
+        if (body.rules) {
+          updateData.rules = body.rules;
         }
 
         if (body.schema) {

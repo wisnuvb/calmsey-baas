@@ -61,8 +61,10 @@ export default function HelpPage() {
         <div className="col-span-9">
           <Card>
             {activeTab === "overview" && (
-              <div className="prose max-w-none">
-                <h2>🚀 Welcome to Calmsey BaaS</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">
+                  🚀 Welcome to Calmsey BaaS
+                </h2>
                 <p>
                   Calmsey BaaS is Backend as a Service platform that allows you
                   to create REST API dynamically based on the defined schema.
@@ -70,7 +72,7 @@ export default function HelpPage() {
                   features.
                 </p>
 
-                <h3>✨ Main Features</h3>
+                <h3 className="text-xl font-medium">✨ Main Features</h3>
                 <div className="grid grid-cols-2 gap-4 my-4">
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-semibold mb-2">
@@ -117,8 +119,8 @@ export default function HelpPage() {
                   </div>
                 </div>
 
-                <h3>🎯 Quick Start</h3>
-                <ol>
+                <h3 className="text-xl font-medium">🎯 Quick Start</h3>
+                <ol className="list-disc list-inside space-y-2 text-base">
                   <li>
                     <strong>Create Project</strong> - Start by creating a new
                     project
@@ -139,99 +141,127 @@ export default function HelpPage() {
             )}
 
             {activeTab === "collections" && (
-              <div className="prose max-w-none">
-                <h2>🗂️ Collections & Schema</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">🗂️ Collections & Schema</h2>
                 <p>
                   Collections are table definitions that define your data
                   structure.
                 </p>
 
-                <h3>Field Types</h3>
-                <table className="min-w-full">
+                <h3 className="text-xl font-medium">Field Types</h3>
+                <table className="min-w-full text-base table-auto border-collapse border border-gray-200">
                   <thead>
                     <tr>
-                      <th>Type</th>
-                      <th>Description</th>
-                      <th>SQL Type</th>
+                      <th className="text-left border border-gray-200 p-2">
+                        Type
+                      </th>
+                      <th className="text-left border border-gray-200 p-2">
+                        Description
+                      </th>
+                      <th className="text-left border border-gray-200 p-2">
+                        SQL Type
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>string</code>
                       </td>
-                      <td>Short text</td>
-                      <td>VARCHAR(255)</td>
+                      <td className="border border-gray-200 p-2">Short text</td>
+                      <td className="border border-gray-200 p-2">
+                        VARCHAR(255)
+                      </td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>text</code>
                       </td>
-                      <td>Long text</td>
-                      <td>TEXT</td>
+                      <td className="border border-gray-200 p-2">Long text</td>
+                      <td className="border border-gray-200 p-2">TEXT</td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>number</code>
                       </td>
-                      <td>Numeric value</td>
-                      <td>NUMERIC</td>
+                      <td className="border border-gray-200 p-2">
+                        Numeric value
+                      </td>
+                      <td className="border border-gray-200 p-2">NUMERIC</td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>boolean</code>
                       </td>
-                      <td>True/False</td>
-                      <td>BOOLEAN</td>
+                      <td className="border border-gray-200 p-2">True/False</td>
+                      <td className="border border-gray-200 p-2">BOOLEAN</td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>date</code>
                       </td>
-                      <td>Date only</td>
-                      <td>DATE</td>
+                      <td className="border border-gray-200 p-2">Date only</td>
+                      <td className="border border-gray-200 p-2">DATE</td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>datetime</code>
                       </td>
-                      <td>Date & time</td>
-                      <td>TIMESTAMP</td>
+                      <td className="border border-gray-200 p-2">
+                        Date & time
+                      </td>
+                      <td className="border border-gray-200 p-2">TIMESTAMP</td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>email</code>
                       </td>
-                      <td>Email with validation</td>
-                      <td>VARCHAR(255)</td>
+                      <td className="border border-gray-200 p-2">
+                        Email with validation
+                      </td>
+                      <td className="border border-gray-200 p-2">
+                        VARCHAR(255)
+                      </td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>url</code>
                       </td>
-                      <td>URL with validation</td>
-                      <td>VARCHAR(500)</td>
+                      <td className="border border-gray-200 p-2">
+                        URL with validation
+                      </td>
+                      <td className="border border-gray-200 p-2">
+                        VARCHAR(500)
+                      </td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>json</code>
                       </td>
-                      <td>JSON object</td>
-                      <td>JSONB</td>
+                      <td className="border border-gray-200 p-2">
+                        JSON object
+                      </td>
+                      <td className="border border-gray-200 p-2">JSONB</td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>relation</code>
                       </td>
-                      <td>Foreign key</td>
-                      <td>VARCHAR(255)</td>
+                      <td className="border border-gray-200 p-2">
+                        Foreign key
+                      </td>
+                      <td className="border border-gray-200 p-2">
+                        VARCHAR(255)
+                      </td>
                     </tr>
                     <tr>
-                      <td>
+                      <td className="border border-gray-200 p-2">
                         <code>file</code>
                       </td>
-                      <td>File path</td>
-                      <td>VARCHAR(500)</td>
+                      <td className="border border-gray-200 p-2">File path</td>
+                      <td className="border border-gray-200 p-2">
+                        VARCHAR(500)
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -274,8 +304,10 @@ export default function HelpPage() {
             )}
 
             {activeTab === "relations" && (
-              <div className="prose max-w-none">
-                <h2>🔗 Relations (Foreign Keys)</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">
+                  🔗 Relations (Foreign Keys)
+                </h2>
                 <p>
                   Calmsey BaaS supports relations between collections, allowing
                   you to create complex data relationships.
@@ -382,18 +414,19 @@ GET /api/data/my-project/orders?populate=customerId
             )}
 
             {activeTab === "transactions" && (
-              <div className="prose max-w-none">
-                <h2>⚛️ Transactions</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">⚛️ Transactions</h2>
                 <p>
-                  Transactions memastikan multiple operations dieksekusi secara
-                  atomic - semua berhasil atau semua gagal.
+                  Transactions makes sure multiple operations are executed
+                  atomically - all succeed or all fail. atomic - all or nothing
+                  execution.{" "}
                   <strong>
-                    Critical untuk financial operations, inventory management,
-                    dan complex workflows.
+                    Critical for financial operations, inventory management, and
+                    complex workflows.
                   </strong>
                 </p>
 
-                <h3>Why Use Transactions?</h3>
+                <h3 className="text-xl font-medium">Why Use Transactions?</h3>
                 <div className="bg-red-50 border border-red-200 p-4 rounded-lg my-4">
                   <h4 className="text-red-900 font-semibold mb-2">
                     ❌ Without Transaction (DANGEROUS)
@@ -418,8 +451,8 @@ Transaction Rollback → Both operations cancelled
                   </pre>
                 </div>
 
-                <h3>Use Cases</h3>
-                <ul>
+                <h3 className="text-xl font-medium">Use Cases</h3>
+                <ul className="list-disc list-inside space-y-2 text-base">
                   <li>💰 Financial transfers (deduct + add)</li>
                   <li>
                     🛒 E-commerce orders (create order + reduce inventory +
@@ -432,7 +465,7 @@ Transaction Rollback → Both operations cancelled
                   <li>🔄 Data migrations</li>
                 </ul>
 
-                <h3>API Usage</h3>
+                <h3 className="text-xl font-medium">API Usage</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
                   {`// Coming soon: Transaction API endpoint
 // For now, use via backend service
@@ -450,23 +483,23 @@ await queryBuilder.executeTransaction([
             )}
 
             {activeTab === "webhooks" && (
-              <div className="prose max-w-none">
-                <h2>🔔 Webhooks</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">🔔 Webhooks</h2>
                 <p>
                   Webhooks are HTTP callbacks that are called automatically when
                   a specific event occurs (create, update, delete). Perfect for
                   integration with other systems.
                 </p>
 
-                <h3>Setup Webhook</h3>
-                <ol>
+                <h3 className="text-xl font-medium">Setup Webhook</h3>
+                <ol className="list-decimal list-inside space-y-2 text-base">
                   <li>Go to Project Settings → Webhooks tab</li>
                   <li>Click "Create Webhook"</li>
                   <li>Enter webhook URL & select events</li>
                   <li>Test webhook to verify</li>
                 </ol>
 
-                <h3>Webhook Payload</h3>
+                <h3 className="text-xl font-medium">Webhook Payload</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
                   {`{
   "event": "onCreate",
@@ -482,7 +515,7 @@ await queryBuilder.executeTransaction([
 }`}
                 </pre>
 
-                <h3>Verifying Signature</h3>
+                <h3 className="text-xl font-medium">Verifying Signature</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs">
                   {`// Node.js example
 const crypto = require('crypto');
@@ -507,22 +540,24 @@ app.post('/webhooks', (req, res) => {
             )}
 
             {activeTab === "email" && (
-              <div className="prose max-w-none">
-                <h2>📧 Email Service</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">📧 Email Service</h2>
                 <p>
                   Send transactional emails with support for multiple providers
                   (SMTP, SendGrid, Mailgun, AWS SES).
                 </p>
 
-                <h3>Configure Email Provider</h3>
-                <ol>
+                <h3 className="text-xl font-medium">
+                  Configure Email Provider
+                </h3>
+                <ol className="list-decimal list-inside space-y-2 text-base">
                   <li>Go to Project Settings → Email tab</li>
                   <li>Choose provider (SMTP, SendGrid, etc)</li>
                   <li>Enter credentials</li>
                   <li>Test sending</li>
                 </ol>
 
-                <h3>Send Email API</h3>
+                <h3 className="text-xl font-medium">Send Email API</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
                   {`POST /api/projects/:projectId/email/send
 Authorization: Bearer YOUR_JWT
@@ -535,12 +570,12 @@ Authorization: Bearer YOUR_JWT
 }`}
                 </pre>
 
-                <h3>Using Templates</h3>
+                <h3 className="text-xl font-medium">Using Templates</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
                   {`{
   "to": "customer@example.com",
   "subject": "Order #{{orderNumber}}",
-  "template": "<h1>Order {{orderNumber}}</h1><p>Total: ${{ total }}</p>",
+  "template": "<h1>Order {{orderNumber}}</h1><p>Total: {{ total }}</p>",
   "templateData": {
     "orderNumber": "ORD-123",
     "total": "150.00"
@@ -551,14 +586,16 @@ Authorization: Bearer YOUR_JWT
             )}
 
             {activeTab === "realtime" && (
-              <div className="prose max-w-none">
-                <h2>🔄 Real-time Subscriptions</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">
+                  🔄 Real-time Subscriptions
+                </h2>
                 <p>
                   Get live updates when data changes using WebSocket
                   connections. Perfect for dashboards, chat, collaborative apps.
                 </p>
 
-                <h3>Connect to WebSocket</h3>
+                <h3 className="text-xl font-medium">Connect to WebSocket</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
                   {`const ws = new WebSocket('ws://localhost:3000/ws');
 
@@ -585,8 +622,8 @@ ws.onmessage = (event) => {
 };`}
                 </pre>
 
-                <h3>Room Patterns</h3>
-                <ul>
+                <h3 className="text-xl font-medium">Room Patterns</h3>
+                <ul className="list-disc list-inside space-y-2 text-base">
                   <li>
                     <code>project:&#123;id&#125;</code> - All project events
                   </li>
@@ -604,8 +641,8 @@ ws.onmessage = (event) => {
                   </li>
                 </ul>
 
-                <h3>Events</h3>
-                <ul>
+                <h3 className="text-xl font-medium">Events</h3>
+                <ul className="list-disc list-inside space-y-2 text-base">
                   <li>
                     <code>data:create</code> - New record created
                   </li>
@@ -620,15 +657,17 @@ ws.onmessage = (event) => {
             )}
 
             {activeTab === "multidb" && (
-              <div className="prose max-w-none">
-                <h2>🗄️ Multi-Database Architecture</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">
+                  🗄️ Multi-Database Architecture
+                </h2>
                 <p>
                   Each project can have a separate database for true tenant
                   isolation, scalability, and compliance.
                 </p>
 
-                <h3>Benefits</h3>
-                <ul>
+                <h3 className="text-xl font-medium">Benefits</h3>
+                <ul className="list-disc list-inside space-y-2 text-base">
                   <li>
                     🔒 <strong>True Isolation</strong> - Data completely
                     separated
@@ -647,7 +686,7 @@ ws.onmessage = (event) => {
                   </li>
                 </ul>
 
-                <h3>Options</h3>
+                <h3 className="text-xl font-medium">Options</h3>
                 <div className="space-y-4 my-4">
                   <div className="border p-4 rounded-lg">
                     <h4 className="font-semibold">
@@ -685,16 +724,16 @@ ws.onmessage = (event) => {
             )}
 
             {activeTab === "audit" && (
-              <div className="prose max-w-none">
-                <h2>📝 Audit Logs</h2>
+              <div className="prose max-w-none space-y-4">
+                <h2 className="text-2xl font-bold">📝 Audit Logs</h2>
                 <p>
                   Track all data changes for compliance, security, and
                   debugging. debugging. Automatic logging of WHO changed WHAT
                   WHEN.
                 </p>
 
-                <h3>What's Logged</h3>
-                <ul>
+                <h3 className="text-xl font-medium">What's Logged</h3>
+                <ul className="list-disc list-inside space-y-2 text-base">
                   <li>👤 User/API Key that made the change</li>
                   <li>🎯 Action (CREATE, UPDATE, DELETE)</li>
                   <li>📄 Old & New data snapshots</li>
@@ -704,10 +743,10 @@ ws.onmessage = (event) => {
                   <li>🔗 Transaction ID (for grouped operations)</li>
                 </ul>
 
-                <h3>View Audit Logs</h3>
+                <h3 className="text-xl font-medium">View Audit Logs</h3>
                 <p>Coming soon in Project Settings → Audit Logs tab</p>
 
-                <h3>Query Audit Logs API</h3>
+                <h3 className="text-xl font-medium">Query Audit Logs API</h3>
                 <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg">
                   {`GET /api/projects/:projectId/audit-logs?
   page=1&

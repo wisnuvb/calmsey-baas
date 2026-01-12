@@ -99,6 +99,14 @@ MAX_FILE_SIZE=10485760
 
 # Storage (local/s3)
 STORAGE_TYPE=local
+
+# AI (optional, untuk AI-assisted Function Editor)
+# Wajib: API key DeepSeek Anda
+DEEPSEEK_API_KEY="your-deepseek-api-key"
+# Opsional: Base URL (biarkan default jika tidak yakin)
+DEEPSEEK_API_BASE="https://api.deepseek.com/v1"
+# Opsional: Model
+DEEPSEEK_MODEL="deepseek-chat"
 ```
 
 4. **Update Prisma schema jika pakai MySQL**
@@ -126,6 +134,16 @@ npm run dev
 ```
 
 Server akan berjalan di `http://localhost:3000`
+
+### AI Code Generation (DeepSeek)
+
+Dashboard Function Editor mendukung generate kode function via AI. Untuk mengaktifkan:
+
+- Set `DEEPSEEK_API_KEY` di `.env` backend
+- Jalankan server (`npm run dev`)
+- Buka Dashboard → Functions → Create/Edit → klik "✨ Generate with AI"
+
+Catatan: Integrasi ini menggunakan endpoint kompatibel OpenAI (`/v1/chat/completions`). Jika DeepSeek Anda memakai base URL berbeda, atur `DEEPSEEK_API_BASE`.
 
 ## 📚 API Documentation
 

@@ -169,7 +169,7 @@ export default function ProjectsPage() {
 
       {projects.length === 0 ? (
         <Card>
-          <div className="text-center py-12">
+          <div className="text-center py-12 flex flex-col items-center justify-center">
             <p className="text-gray-500 mb-4">No projects yet</p>
             <Button onClick={() => setShowCreateModal(true)}>
               Create Your First Project
@@ -260,8 +260,8 @@ export default function ProjectsPage() {
               database: "",
               username: "",
               password: "",
-              type: "postgresql"
-            }
+              type: "postgresql",
+            },
           });
           setError("");
         }}
@@ -270,246 +270,246 @@ export default function ProjectsPage() {
       >
         <div className="p-6">
           <form onSubmit={handleCreate} className="space-y-4">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <Input
+              label="Project Name"
+              required
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              placeholder="My Awesome Project"
+            />
+
+            <Input
+              label="Description"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Optional description"
+            />
+
+            {/* Multi-Database Options */}
+            <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="useDedicatedDb"
+                  checked={formData.useDedicatedDb}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      useDedicatedDb: e.target.checked,
+                    })
+                  }
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <label
+                    htmlFor="useDedicatedDb"
+                    className="font-medium text-gray-900 cursor-pointer"
+                  >
+                    Use Dedicated Database
+                  </label>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Create a separate database for this project (recommended for
+                    production & enterprise use)
+                  </p>
                 </div>
-              )}
+              </div>
 
-              <Input
-                label="Project Name"
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="My Awesome Project"
-              />
-
-              <Input
-                label="Description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Optional description"
-              />
-
-              {/* Multi-Database Options */}
-              <div className="border border-gray-200 rounded-lg p-4 space-y-4">
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="useDedicatedDb"
-                    checked={formData.useDedicatedDb}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        useDedicatedDb: e.target.checked,
-                      })
-                    }
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <label
-                      htmlFor="useDedicatedDb"
-                      className="font-medium text-gray-900 cursor-pointer"
-                    >
-                      Use Dedicated Database
-                    </label>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Create a separate database for this project (recommended
-                      for production & enterprise use)
-                    </p>
-                  </div>
-                </div>
-
-                {formData.useDedicatedDb && (
-                  <div className="pl-6 space-y-4">
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        id="useSameServer"
-                        checked={formData.useSameServer}
-                        onChange={() =>
-                          setFormData({ ...formData, useSameServer: true })
-                        }
-                        className="mt-1"
-                      />
-                      <div>
-                        <label
-                          htmlFor="useSameServer"
-                          className="font-medium text-sm cursor-pointer"
-                        >
-                          Use Main Database Server
-                        </label>
-                        <p className="text-xs text-gray-600">
-                          Create database on the same server (easier setup)
-                        </p>
-                      </div>
+              {formData.useDedicatedDb && (
+                <div className="pl-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      id="useSameServer"
+                      checked={formData.useSameServer}
+                      onChange={() =>
+                        setFormData({ ...formData, useSameServer: true })
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <label
+                        htmlFor="useSameServer"
+                        className="font-medium text-sm cursor-pointer"
+                      >
+                        Use Main Database Server
+                      </label>
+                      <p className="text-xs text-gray-600">
+                        Create database on the same server (easier setup)
+                      </p>
                     </div>
+                  </div>
 
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        id="useCustomServer"
-                        checked={!formData.useSameServer}
-                        onChange={() =>
-                          setFormData({ ...formData, useSameServer: false })
-                        }
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <label
-                          htmlFor="useCustomServer"
-                          className="font-medium text-sm cursor-pointer"
-                        >
-                          Use Custom Database Server
-                        </label>
-                        <p className="text-xs text-gray-600 mb-3">
-                          Connect to external database (for compliance,
-                          geo-distribution)
-                        </p>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      id="useCustomServer"
+                      checked={!formData.useSameServer}
+                      onChange={() =>
+                        setFormData({ ...formData, useSameServer: false })
+                      }
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="useCustomServer"
+                        className="font-medium text-sm cursor-pointer"
+                      >
+                        Use Custom Database Server
+                      </label>
+                      <p className="text-xs text-gray-600 mb-3">
+                        Connect to external database (for compliance,
+                        geo-distribution)
+                      </p>
 
-                        {!formData.useSameServer && (
-                          <div className="space-y-3 pl-6">
+                      {!formData.useSameServer && (
+                        <div className="space-y-3 pl-6">
+                          <Input
+                            label="Host"
+                            value={formData.dbConfig.host}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                dbConfig: {
+                                  ...formData.dbConfig,
+                                  host: e.target.value,
+                                },
+                              })
+                            }
+                            placeholder="db.example.com"
+                            // size="sm"
+                          />
+                          <div className="grid grid-cols-2 gap-3">
                             <Input
-                              label="Host"
-                              value={formData.dbConfig.host}
+                              label="Port"
+                              type="number"
+                              value={formData.dbConfig.port}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
                                   dbConfig: {
                                     ...formData.dbConfig,
-                                    host: e.target.value,
+                                    port: parseInt(e.target.value),
                                   },
                                 })
                               }
-                              placeholder="db.example.com"
                               // size="sm"
                             />
-                            <div className="grid grid-cols-2 gap-3">
-                              <Input
-                                label="Port"
-                                type="number"
-                                value={formData.dbConfig.port}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Type
+                              </label>
+                              <select
+                                value={formData.dbConfig.type}
                                 onChange={(e) =>
                                   setFormData({
                                     ...formData,
                                     dbConfig: {
                                       ...formData.dbConfig,
-                                      port: parseInt(e.target.value),
+                                      type: e.target.value as any,
                                     },
                                   })
                                 }
-                                // size="sm"
-                              />
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Type
-                                </label>
-                                <select
-                                  value={formData.dbConfig.type}
-                                  onChange={(e) =>
-                                    setFormData({
-                                      ...formData,
-                                      dbConfig: {
-                                        ...formData.dbConfig,
-                                        type: e.target.value as any,
-                                      },
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                                >
-                                  <option value="postgresql">PostgreSQL</option>
-                                  <option value="mysql">MySQL</option>
-                                </select>
-                              </div>
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              >
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="mysql">MySQL</option>
+                              </select>
                             </div>
-                            <Input
-                              label="Database Name"
-                              value={formData.dbConfig.database}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  dbConfig: {
-                                    ...formData.dbConfig,
-                                    database: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="my_database"
-                              // size="sm"
-                            />
-                            <Input
-                              label="Username"
-                              value={formData.dbConfig.username}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  dbConfig: {
-                                    ...formData.dbConfig,
-                                    username: e.target.value,
-                                  },
-                                })
-                              }
-                              // size="sm"
-                            />
-                            <Input
-                              label="Password"
-                              type="password"
-                              value={formData.dbConfig.password}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  dbConfig: {
-                                    ...formData.dbConfig,
-                                    password: e.target.value,
-                                  },
-                                })
-                              }
-                              // size="sm"
-                            />
                           </div>
-                        )}
-                      </div>
+                          <Input
+                            label="Database Name"
+                            value={formData.dbConfig.database}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                dbConfig: {
+                                  ...formData.dbConfig,
+                                  database: e.target.value,
+                                },
+                              })
+                            }
+                            placeholder="my_database"
+                            // size="sm"
+                          />
+                          <Input
+                            label="Username"
+                            value={formData.dbConfig.username}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                dbConfig: {
+                                  ...formData.dbConfig,
+                                  username: e.target.value,
+                                },
+                              })
+                            }
+                            // size="sm"
+                          />
+                          <Input
+                            label="Password"
+                            type="password"
+                            value={formData.dbConfig.password}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                dbConfig: {
+                                  ...formData.dbConfig,
+                                  password: e.target.value,
+                                },
+                              })
+                            }
+                            // size="sm"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setFormData({
-                      name: "",
-                      description: "",
-                      useDedicatedDb: false,
-                      useSameServer: true,
-                      dbConfig: {
-                        host: "",
-                        port: 5432,
-                        database: "",
-                        username: "",
-                        password: "",
-                        type: "postgresql",
-                      },
-                    });
-                    setError("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1" isLoading={submitting}>
-                  Create Project
-                </Button>
-              </div>
-            </form>
-          </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setFormData({
+                    name: "",
+                    description: "",
+                    useDedicatedDb: false,
+                    useSameServer: true,
+                    dbConfig: {
+                      host: "",
+                      port: 5432,
+                      database: "",
+                      username: "",
+                      password: "",
+                      type: "postgresql",
+                    },
+                  });
+                  setError("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1" isLoading={submitting}>
+                Create Project
+              </Button>
+            </div>
+          </form>
+        </div>
       </Modal>
     </div>
   );
