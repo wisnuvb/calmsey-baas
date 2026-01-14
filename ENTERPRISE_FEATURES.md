@@ -1,6 +1,6 @@
 # Enterprise Features - Calmsey BaaS
 
-Dokumentasi lengkap untuk fitur-fitur enterprise yang baru ditambahkan.
+Complete documentation for newly added enterprise features.
 
 ## Table of Contents
 
@@ -16,8 +16,9 @@ Dokumentasi lengkap untuk fitur-fitur enterprise yang baru ditambahkan.
 
 ### Overview
 
-Transaction support memungkinkan multiple operations dieksekusi secara atomic - semua berhasil atau semua gagal. Ini **critical** untuk:
-- Financial operations (transfer uang, payment processing)
+Transaction support allows multiple operations to be executed atomically—either all succeed or all fail. This is critical for:
+
+- Financial operations (money transfers, payment processing)
 - Inventory management (order + reduce stock)
 - Complex workflows (multi-step processes)
 
@@ -66,31 +67,38 @@ const transactionId = auditService.generateTransactionId();
 try {
   await queryBuilder.executeTransaction([
     // 1. Create order
-    (prisma) => prisma.$queryRawUnsafe(
-      `INSERT INTO "data_proj_orders" (customer_id, total, status)
+    (prisma) =>
+      prisma.$queryRawUnsafe(
+        `INSERT INTO "data_proj_orders" (customer_id, total, status)
        VALUES ($1, $2, $3) RETURNING id`,
-      customerId, total, 'pending'
-    ),
+        customerId,
+        total,
+        "pending"
+      ),
 
     // 2. Reduce inventory
-    (prisma) => prisma.$queryRawUnsafe(
-      `UPDATE "data_proj_products"
+    (prisma) =>
+      prisma.$queryRawUnsafe(
+        `UPDATE "data_proj_products"
        SET stock = stock - $1
        WHERE id = $2`,
-      quantity, productId
-    ),
+        quantity,
+        productId
+      ),
 
     // 3. Create invoice
-    (prisma) => prisma.$queryRawUnsafe(
-      `INSERT INTO "data_proj_invoices" (order_id, amount)
+    (prisma) =>
+      prisma.$queryRawUnsafe(
+        `INSERT INTO "data_proj_invoices" (order_id, amount)
        VALUES ($1, $2)`,
-      orderId, total
-    ),
+        orderId,
+        total
+      ),
   ]);
 
-  console.log('Order processed successfully');
+  console.log("Order processed successfully");
 } catch (error) {
-  console.error('Transaction failed, all rolled back:', error);
+  console.error("Transaction failed, all rolled back:", error);
 }
 ```
 
@@ -118,9 +126,10 @@ Content-Type: application/json
 
 ### Overview
 
-Audit logging melacak **semua perubahan data** untuk:
+Audit logging tracks **all data changes** for:
+
 - Compliance (SOX, GDPR, ISO 27001)
-- Debugging (siapa ubah apa kapan)
+- Debugging (who changed what when)
 - Security (detect unauthorized changes)
 - History tracking
 
@@ -157,7 +166,7 @@ Audit logging melacak **semua perubahan data** untuk:
 #### 1. Manual Audit Logging
 
 ```typescript
-import { AuditLogService } from './lib/audit-log.service';
+import { AuditLogService } from "./lib/audit-log.service";
 
 const auditService = new AuditLogService(prisma);
 
@@ -165,12 +174,12 @@ const auditService = new AuditLogService(prisma);
 await auditService.log(
   projectId,
   {
-    action: 'UPDATE',
-    tableName: 'data_proj_products',
-    recordId: 'prod-123',
+    action: "UPDATE",
+    tableName: "data_proj_products",
+    recordId: "prod-123",
     oldData: { price: 100, stock: 50 },
     newData: { price: 150, stock: 45 },
-    changedFields: ['price', 'stock'],
+    changedFields: ["price", "stock"],
   },
   {
     userId: user.id,
@@ -184,27 +193,31 @@ await auditService.log(
 
 ```typescript
 // In your routes file
-import { autoAuditMiddleware } from './middleware/audit.middleware';
+import { autoAuditMiddleware } from "./middleware/audit.middleware";
 
-fastify.patch('/:id', {
-  onRequest: [authenticateApiKey, autoAuditMiddleware],
-}, async (request, reply) => {
-  // Get old data
-  const oldData = await queryBuilder.findOne(id);
+fastify.patch(
+  "/:id",
+  {
+    onRequest: [authenticateApiKey, autoAuditMiddleware],
+  },
+  async (request, reply) => {
+    // Get old data
+    const oldData = await queryBuilder.findOne(id);
 
-  // Update
-  const newData = await queryBuilder.update(id, request.body);
+    // Update
+    const newData = await queryBuilder.update(id, request.body);
 
-  // Auto-log the change
-  await request.audit.log({
-    tableName: 'data_proj_products',
-    recordId: id,
-    oldData,
-    newData,
-  });
+    // Auto-log the change
+    await request.audit.log({
+      tableName: "data_proj_products",
+      recordId: id,
+      oldData,
+      newData,
+    });
 
-  return newData;
-});
+    return newData;
+  }
+);
 ```
 
 #### 3. Query Audit Logs
@@ -212,18 +225,18 @@ fastify.patch('/:id', {
 ```typescript
 // Get audit logs for a project
 const logs = await auditService.query({
-  projectId: 'proj-123',
+  projectId: "proj-123",
   page: 1,
   limit: 50,
-  userId: 'user-456',        // Filter by user
-  tableName: 'data_proj_products',
-  action: 'UPDATE',
-  startDate: new Date('2024-01-01'),
-  endDate: new Date('2024-01-31'),
+  userId: "user-456", // Filter by user
+  tableName: "data_proj_products",
+  action: "UPDATE",
+  startDate: new Date("2024-01-01"),
+  endDate: new Date("2024-01-31"),
 });
 
-console.log(logs.data);      // Array of audit logs
-console.log(logs.meta);      // Pagination info
+console.log(logs.data); // Array of audit logs
+console.log(logs.meta); // Pagination info
 ```
 
 #### 4. Get Record History
@@ -232,13 +245,13 @@ console.log(logs.meta);      // Pagination info
 // Get complete history of a record
 const history = await auditService.getRecordHistory(
   projectId,
-  'data_proj_products',
-  'prod-123'
+  "data_proj_products",
+  "prod-123"
 );
 
-history.forEach(log => {
+history.forEach((log) => {
   console.log(`${log.createdAt}: ${log.action} by ${log.userEmail}`);
-  console.log('  Changed fields:', log.changedFields);
+  console.log("  Changed fields:", log.changedFields);
 });
 ```
 
@@ -268,7 +281,8 @@ GET /api/projects/:projectId/audit-logs/transactions/:transactionId
 
 ### Overview
 
-Setiap project bisa punya **database terpisah** untuk:
+Each project can have a separate database for:
+
 - True tenant isolation
 - Data sovereignty (region-specific databases)
 - Scalability (horizontal scaling)
@@ -352,6 +366,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -397,7 +412,7 @@ Content-Type: application/json
 #### 4. Code Usage
 
 ```typescript
-import { DatabaseManagerService } from './lib/database-manager.service';
+import { DatabaseManagerService } from "./lib/database-manager.service";
 
 const dbManager = new DatabaseManagerService(prisma);
 
@@ -427,7 +442,7 @@ console.log(status); // { connected: true }
 
 ### Overview
 
-Row-Level Security (RLS) memastikan users hanya bisa akses data mereka sendiri di **database level**, bukan aplikasi level.
+Row-Level Security (RLS) ensures that users can only access their own data at the **database level**, not the application level.
 
 ### Benefits
 
@@ -439,40 +454,36 @@ Row-Level Security (RLS) memastikan users hanya bisa akses data mereka sendiri d
 ### PostgreSQL RLS (Database-Level)
 
 ```typescript
-import { RowLevelSecurityService } from './lib/row-level-security.service';
+import { RowLevelSecurityService } from "./lib/row-level-security.service";
 
 const rlsService = new RowLevelSecurityService(prisma);
 
 // 1. Enable RLS on table
-await rlsService.enableRLS('data_proj_customers');
+await rlsService.enableRLS("data_proj_customers");
 
 // 2. Create policy: users can only see their own data
 await rlsService.createUserAccessPolicy(
-  'data_proj_customers',
-  'user_id'  // column name
+  "data_proj_customers",
+  "user_id" // column name
 );
 
 // 3. Execute queries with context
-await rlsService.executeWithContext(
-  { userId: 'user-123' },
-  async () => {
-    // This query will automatically filter by user_id
-    const customers = await prisma.$queryRaw`
+await rlsService.executeWithContext({ userId: "user-123" }, async () => {
+  // This query will automatically filter by user_id
+  const customers = await prisma.$queryRaw`
       SELECT * FROM data_proj_customers
     `;
-    return customers;
-  }
-);
+  return customers;
+});
 ```
 
 ### Application-Level RLS (Works for MySQL & PostgreSQL)
 
 ```typescript
 // Apply RLS filter to WHERE clause
-const whereClause = rlsService.applyApplicationRLS(
-  'WHERE status = "active"',
-  { userId: 'user-123' }
-);
+const whereClause = rlsService.applyApplicationRLS('WHERE status = "active"', {
+  userId: "user-123",
+});
 // Result: WHERE status = "active" AND user_id = 'user-123'
 ```
 
@@ -481,8 +492,8 @@ const whereClause = rlsService.applyApplicationRLS(
 ```typescript
 // Example: Manager can see all, employees see only theirs
 await rlsService.createCustomPolicy(
-  'data_proj_documents',
-  'manager_or_owner',
+  "data_proj_documents",
+  "manager_or_owner",
   `role = 'manager' OR user_id = current_setting('app.current_user_id')::text`
 );
 ```
@@ -514,28 +525,32 @@ npm run prisma:migrate
 
 ```typescript
 // Before
-fastify.post('/', async (request, reply) => {
+fastify.post("/", async (request, reply) => {
   const result = await queryBuilder.insert(request.body);
   return result;
 });
 
 // After (with audit logging)
-import { autoAuditMiddleware } from './middleware/audit.middleware';
+import { autoAuditMiddleware } from "./middleware/audit.middleware";
 
-fastify.post('/', {
-  onRequest: [autoAuditMiddleware],
-}, async (request, reply) => {
-  const result = await queryBuilder.insert(request.body);
+fastify.post(
+  "/",
+  {
+    onRequest: [autoAuditMiddleware],
+  },
+  async (request, reply) => {
+    const result = await queryBuilder.insert(request.body);
 
-  // Log the operation
-  await request.audit.log({
-    tableName: 'data_proj_products',
-    recordId: result.id,
-    newData: result,
-  });
+    // Log the operation
+    await request.audit.log({
+      tableName: "data_proj_products",
+      recordId: result.id,
+      newData: result,
+    });
 
-  return result;
-});
+    return result;
+  }
+);
 ```
 
 #### Use Transactions for Critical Operations
@@ -599,7 +614,7 @@ ENABLE_RLS=true
 ```typescript
 // ❌ BAD - Money can be lost
 await deductBalance(fromAccount, amount);
-await addBalance(toAccount, amount);  // If this fails, money is lost!
+await addBalance(toAccount, amount); // If this fails, money is lost!
 
 // ✅ GOOD - Atomic operation
 await queryBuilder.executeTransaction([
@@ -612,11 +627,11 @@ await queryBuilder.executeTransaction([
 
 ```typescript
 // For collections with PII, financial data, etc.
-const sensitiveCollections = ['customers', 'orders', 'payments', 'invoices'];
+const sensitiveCollections = ["customers", "orders", "payments", "invoices"];
 
 // Enable auto-audit
 if (sensitiveCollections.includes(collectionSlug)) {
-  fastify.addHook('onRequest', autoAuditMiddleware);
+  fastify.addHook("onRequest", autoAuditMiddleware);
 }
 ```
 
@@ -642,6 +657,7 @@ await rlsService.createProjectIsolationPolicy(tableName);
 ### Issue: Prisma Migration Fails
 
 **Solution:**
+
 ```bash
 # Reset database (DEV ONLY!)
 npx prisma migrate reset
@@ -653,6 +669,7 @@ npx prisma migrate deploy
 ### Issue: Audit Logs Not Created
 
 **Check:**
+
 1. Is middleware attached? `onRequest: [autoAuditMiddleware]`
 2. Is project context set? `request.project` should exist
 3. Check logs for errors
@@ -660,6 +677,7 @@ npx prisma migrate deploy
 ### Issue: Transaction Timeout
 
 **Solution:**
+
 ```typescript
 // Increase timeout
 await prisma.$transaction([...], {
@@ -670,21 +688,19 @@ await prisma.$transaction([...], {
 ### Issue: RLS Blocks All Queries
 
 **Solution:**
+
 ```typescript
 // Make sure to set context before queries
-await rlsService.executeWithContext(
-  { userId: 'user-123' },
-  async () => {
-    // Your query here
-  }
-);
+await rlsService.executeWithContext({ userId: "user-123" }, async () => {
+  // Your query here
+});
 ```
 
 ---
 
 ## Conclusion
 
-Dengan fitur-fitur enterprise ini, Calmsey BaaS sekarang **production-ready** untuk:
+With these enterprise features, Calmsey BaaS is now **production-ready** for:
 
 ✅ **E-commerce platforms** (transactions + audit)
 ✅ **Financial applications** (transactions + compliance)
@@ -693,6 +709,7 @@ Dengan fitur-fitur enterprise ini, Calmsey BaaS sekarang **production-ready** un
 ✅ **ERP systems** (transactions + audit + RLS)
 
 **Next Steps:**
+
 1. Run migration: `npm run prisma:migrate`
 2. Update your code to use transactions
 3. Enable audit logging on critical routes
@@ -704,4 +721,4 @@ Dengan fitur-fitur enterprise ini, Calmsey BaaS sekarang **production-ready** un
 ## Support
 
 Questions? Issues?
-Create an issue di GitHub repository atau email: wisnuvb@gmail.com
+Create an issue on the GitHub repository or email: wisnuvb@gmail.com

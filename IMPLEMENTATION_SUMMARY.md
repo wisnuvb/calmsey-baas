@@ -1,12 +1,12 @@
 # Custom Functions Implementation Summary
 
-## 🎉 IMPLEMENTASI SELESAI!
+## 🎉 IMPLEMENTATION COMPLETE!
 
-Fitur Custom Functions (Serverless Functions) telah berhasil diimplementasikan di Calmsey BaaS!
+The Custom Functions (Serverless Functions) feature has been successfully implemented in Calmsey BaaS!
 
 ---
 
-## 📦 Yang Telah Diimplementasikan
+## 📦 What Has Been Implemented
 
 ### 1. **Backend Infrastructure** ✅
 
@@ -46,8 +46,8 @@ Fitur Custom Functions (Serverless Functions) telah berhasil diimplementasikan d
 
 #### Security & Performance
 
-- ✅ JWT authentication untuk management
-- ✅ API Key authentication untuk invocation
+- ✅ JWT authentication for management
+- ✅ API Key authentication for invocation
 - ✅ Rate limiting per API key
 - ✅ Input validation
 - ✅ SQL injection prevention
@@ -67,7 +67,7 @@ Fitur Custom Functions (Serverless Functions) telah berhasil diimplementasikan d
 
 2. ✅ **FunctionEditorPage** - Create/Edit functions
 
-   - Code editor dengan syntax highlighting
+   - Code editor with syntax highlighting
    - Real-time validation
    - Environment variables management
    - Runtime configuration (timeout, memory)
@@ -81,10 +81,10 @@ Fitur Custom Functions (Serverless Functions) telah berhasil diimplementasikan d
 
 #### Navigation
 
-- ✅ Added "Functions" menu item dengan icon ⚡
-- ✅ Integrated dengan project selector
-- ✅ Routing configured di App.tsx
-- ✅ Updated DashboardLayout
+- ✅ Added "Functions" menu item with icon ⚡
+- ✅ Integrated with project selector
+- ✅ Routing configured in App.tsx
+- ✅ Updated Dashboard Layout
 
 ---
 
@@ -112,33 +112,33 @@ Fitur Custom Functions (Serverless Functions) telah berhasil diimplementasikan d
 
 ---
 
-## 🚀 Cara Menggunakan
+## 🚀 How to Use
 
 ### 1. Start Backend Server
 
 ```bash
-cd /Users/wisnu/Project/calmsey-baas
+cd /calmsey-baas
 npm run dev
 ```
 
-Server akan running di `http://localhost:3000`
+Server will be running on `http://localhost:3000`
 
 ### 2. Start Dashboard
 
 ```bash
-cd /Users/wisnu/Project/calmsey-baas/dashboard
+cd /calmsey-baas/dashboard
 npm run dev
 ```
 
-Dashboard akan running di `http://localhost:5173`
+Dashboard will be running on `http://localhost:5173`
 
 ### 3. Create Your First Function
 
-1. Login ke dashboard
-2. Pilih/create project
-3. Navigate ke **Functions** (⚡ icon di sidebar)
-4. Click **+ New Function**
-5. Isi form:
+1. Login to the dashboard
+2. Select/create project
+3. Navigate to **Functions** (⚡ icon in the sidebar)
+4. Click **\*+ New Function**
+5. Fill in the form:
    ```
    Name: hello-world
    Description: My first function
@@ -333,10 +333,10 @@ export async function sendSMS(context) {
 
 ## 🚧 Limitations (Phase 1)
 
-1. **Dependencies**: Hanya built-in Node.js modules + Prisma
-2. **Versioning**: Belum support multiple versions
-3. **Async Jobs**: Belum support background execution
-4. **Triggers**: Belum support cron/event triggers
+1. **Dependencies**: Only built-in Node.js modules + Prisma
+2. **Versioning**: Does not support multiple versions yet
+3. **Async Jobs**: Does not support background execution
+4. **Triggers**: Doesn't support cron/event triggers yet
 5. **Monitoring**: Basic metrics only
 
 ---
@@ -404,22 +404,22 @@ export async function sendSMS(context) {
 
 ---
 
-## 🙏 Next Steps untuk User
+## 🙏 Next Steps for Users
 
 1. **Start servers** (backend + dashboard)
-2. **Create test project** di dashboard
-3. **Create first function** dengan example code
-4. **Test invocation** via cURL atau Postman
-5. **View logs** di dashboard
-6. **Explore examples** di `examples/function-examples.ts`
-7. **Read documentation** di `CUSTOM_FUNCTIONS.md`
+2. **Create test project** in the dashboard
+3. **Create first function** with example code
+4. **Test invocation** via cURL or Postman
+5. **View logs** on the dashboard
+6. **Explore examples** in `examples/function-examples.ts`
+7. **Read documentation** in `CUSTOM_FUNCTIONS.md`
 8. **Build your use case!** 🚀
 
 ---
 
 ## 📞 Support
 
-Jika ada pertanyaan atau issues:
+If you have any questions or issues:
 
 - 📧 Email: wisnuvb@gmail.com
 - 📚 Docs: `CUSTOM_FUNCTIONS.md`
@@ -427,9 +427,4 @@ Jika ada pertanyaan atau issues:
 
 ---
 
-**🎊 Selamat! Custom Functions sudah siap digunakan! 🎊**
-
-**Total Implementation Time**: ~6 jam
-**Lines of Code**: ~3000+ lines
-**Files Created/Modified**: 20+ files
-**Status**: ✅ PRODUCTION READY (Phase 1 MVP)
+**🎊 Congratulations! Your Custom Functions are ready to use! 🎊**

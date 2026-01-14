@@ -1,7 +1,7 @@
 {
   "name": "calmsey-baas",
   "version": "0.0.1",
-  "description": "Calmsey Backend as a Service",
+  "description": "Calmsey - Self-hosted BaaS & API Platform",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
@@ -54,6 +54,7 @@
     "@types/node": "^20.11.0",
     "@types/nodemailer": "^7.0.3",
     "@types/ws": "^8.18.1",
+    "baseline-browser-mapping": "^2.9.14",
     "prisma": "^5.19.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"

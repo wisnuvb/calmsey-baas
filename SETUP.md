@@ -1,10 +1,10 @@
 # Setup Guide - Calmsey BaaS
 
-Panduan lengkap untuk setup dan testing Calmsey BaaS ini.
+This is a complete guide to setting up and testing Calmsey BaaS.
 
 ## Prerequisites
 
-Sebelum memulai, pastikan Anda sudah install:
+Before starting, make sure you have installed:
 
 - Node.js 20+ ([Download](https://nodejs.org/))
 - PostgreSQL 14+ atau MySQL 8+
@@ -14,10 +14,10 @@ Sebelum memulai, pastikan Anda sudah install:
 
 ### 1. Database Setup
 
-#### Untuk PostgreSQL:
+#### For PostgreSQL:
 
 ```bash
-# Install PostgreSQL (jika belum)
+# Install PostgreSQL (if not already)
 # macOS
 brew install postgresql@14
 brew services start postgresql@14
@@ -26,7 +26,7 @@ brew services start postgresql@14
 sudo apt install postgresql-14
 sudo systemctl start postgresql
 
-# Windows: Download installer dari postgresql.org
+# Windows: Download installer from postgresql.org
 
 # Create database
 psql -U postgres
@@ -34,10 +34,10 @@ CREATE DATABASE baas_poc;
 \q
 ```
 
-#### Untuk MySQL:
+#### For MySQL:
 
 ```bash
-# Install MySQL (jika belum)
+# Install MySQL (if not already)
 # macOS
 brew install mysql
 brew services start mysql
@@ -46,7 +46,7 @@ brew services start mysql
 sudo apt install mysql-server
 sudo systemctl start mysql
 
-# Windows: Download installer dari mysql.com
+# Windows: Download installer from mysql.com
 
 # Create database
 mysql -u root -p
@@ -57,24 +57,24 @@ exit;
 ### 2. Project Setup
 
 ```bash
-# Masuk ke direktori project
-cd baas-poc
+# Go to the project directory
+cd calmsey-baas
 
 # Install dependencies
 npm install
 
-# Copy dan edit .env file
+# Copy and edit .env file
 cp .env.example .env
-nano .env  # atau gunakan text editor favorit
+nano .env
 ```
 
-**Edit .env sesuai database Anda:**
+**Edit .env according to your database:**
 
 ```env
-# Untuk PostgreSQL
+# For PostgreSQL
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/baas_poc?schema=public"
 
-# Untuk MySQL
+# For MySQL
 DATABASE_URL="mysql://root:password@localhost:3306/baas_poc"
 ```
 
@@ -87,7 +87,7 @@ npm run prisma:generate
 # Run migrations (create tables)
 npm run prisma:migrate
 
-# (Optional) Open Prisma Studio untuk lihat database
+# (Optional) Open Prisma Studio to view the database
 npm run prisma:studio
 ```
 
@@ -97,9 +97,9 @@ npm run prisma:studio
 npm run dev
 ```
 
-Server akan berjalan di `http://localhost:3000`
+The server will run at `http://localhost:3000`
 
-Test dengan curl:
+Test with curl:
 
 ```bash
 curl http://localhost:3000/health
@@ -118,7 +118,7 @@ Expected response:
 
 ## Quick Start Testing
 
-Setelah server berjalan, test dengan flow berikut:
+Once the server is running, test it with the following flow:
 
 ### 1. Register User
 
@@ -132,7 +132,7 @@ curl -X POST http://localhost:3000/api/auth/register \
   }'
 ```
 
-Simpan `token` dari response.
+Save the `token` from the response.
 
 ### 2. Create Project
 
@@ -146,7 +146,7 @@ curl -X POST http://localhost:3000/api/projects \
   }'
 ```
 
-Simpan `slug` dan `apiKey` dari response.
+Save `slug` and `apiKey` from response.
 
 ### 3. Create Collection
 
@@ -218,11 +218,11 @@ curl -X DELETE http://localhost:3000/api/data/test-project/tasks/ITEM_ID \
 
 ### Error: "Database connection failed"
 
-**Solusi:**
+**Solution:**
 
-1. Pastikan database server berjalan
-2. Check DATABASE_URL di .env
-3. Test koneksi database:
+1. Make sure the database server is running.
+2. Check the DATABASE_URL in .env.
+3. Test the database connection:
 
    ```bash
    # PostgreSQL
@@ -234,7 +234,7 @@ curl -X DELETE http://localhost:3000/api/data/test-project/tasks/ITEM_ID \
 
 ### Error: "Cannot find module '@prisma/client'"
 
-**Solusi:**
+**Solution:**
 
 ```bash
 npm run prisma:generate
@@ -242,10 +242,10 @@ npm run prisma:generate
 
 ### Error: "Port 3000 already in use"
 
-**Solusi:**
+**Solution:**
 
-1. Ganti PORT di .env
-2. Atau kill process yang menggunakan port 3000:
+1. Change PORT in .env
+2. Or kill the process using port 3000:
 
    ```bash
    # macOS/Linux
@@ -258,7 +258,7 @@ npm run prisma:generate
 
 ### Migration Error
 
-**Solusi:**
+**Solution:**
 
 ```bash
 # Reset database
@@ -272,7 +272,7 @@ npm run prisma:migrate
 
 ## Using with Postman
 
-1. Import collection dari file `postman_collection.json` (akan dibuat)
+1. Import the collection from the `postman_collection.json` file (which will be created later)
 2. Set environment variables:
    - `base_url`: http://localhost:3000
    - `token`: (dari login response)
@@ -357,13 +357,13 @@ mysql -u root -p baas_poc < backup.sql
 
 ## Next Steps
 
-Setelah setup berhasil, explore:
+After successful setup, explore:
 
 1. Create multiple projects
 2. Define various collection schemas
-3. Test dynamic API with different data types
+3. Test dynamic APIs with different data types
 4. Try file upload
 5. Test validation rules
 6. Experiment with filtering and pagination
 
-Untuk contoh use case yang lebih lengkap, lihat `EXAMPLES.md`.
+For a more complete use case example, see `EXAMPLES.md`.

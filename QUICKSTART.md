@@ -12,7 +12,7 @@ Get your BaaS up and running in 5 minutes!
 ### 1. Install Dependencies
 
 ```bash
-cd baas-poc
+cd calmsey-baas
 npm install
 ```
 

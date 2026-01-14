@@ -75,11 +75,11 @@ curl -X POST http://localhost:3000/api/invoke/YOUR_PROJECT_SLUG/hello-world \
 
 ## Function Context
 
-Setiap function menerima `context` object dengan properties berikut:
+Each function accepts a `context` object with the following properties:
 
 ### `context.prisma`
 
-Prisma client yang sudah di-scope ke project Anda. Gunakan untuk query database.
+A Prisma client scoped to your project. Use it to query the database.
 
 ```typescript
 // Query raw SQL
@@ -146,7 +146,7 @@ const secret = context.env.SECRET_TOKEN;
 
 ### `context.log()` & `context.error()`
 
-Logging functions (output akan tersimpan di logs):
+Logging functions (output will be saved in logs):
 
 ```typescript
 context.log("Processing user:", userId);
@@ -518,7 +518,7 @@ export async function handler(context) {
 
 ### 3. Use Logging
 
-Log important events untuk debugging:
+Log important events for debugging:
 
 ```typescript
 export async function handler(context) {
@@ -534,11 +534,11 @@ export async function handler(context) {
 
 ### 4. Keep Functions Small
 
-Satu function = satu responsibility. Jangan buat function yang terlalu besar.
+One function = one responsibility. Don't make functions too large.
 
 ### 5. Use Environment Variables
 
-Jangan hardcode secrets di code:
+Don't hardcode secrets in code:
 
 ```typescript
 // ❌ BAD
@@ -550,7 +550,7 @@ const apiKey = context.env.API_KEY;
 
 ### 6. Return Consistent Format
 
-Gunakan format response yang konsisten:
+Use a consistent response format:
 
 ```typescript
 // Success
@@ -574,13 +574,13 @@ return {
 
 ### Current Limitations (Phase 1 MVP)
 
-1. **Dependencies**: Hanya built-in Node.js modules + Prisma
+1. **Dependencies**: Only built-in Node.js modules + Prisma
 2. **Timeout**: Max 30 seconds (configurable up to 5 minutes)
 3. **Memory**: Max 256MB (configurable up to 2GB)
 4. **Concurrent Executions**: Shared resources
-5. **Cold Start**: ~50-200ms untuk first invocation
-6. **No File System**: Tidak bisa write ke disk
-7. **Single Version**: Belum support versioning/rollback
+5. **Cold Start**: ~50-200ms for first invocation
+6. **No File System**: Cannot write to disk
+7. **Single Version**: Does not support versioning/rollback
 
 ### Coming in Phase 2
 
@@ -598,44 +598,44 @@ return {
 
 ### Function Timeout
 
-**Problem**: Function melebihi timeout limit
+**Problem**: Function exceeds timeout limit
 
 **Solution**:
 
-- Increase timeout di function settings
+- Increase timeout in function settings
 - Optimize query performance
-- Use pagination untuk large datasets
-- Consider async processing untuk long tasks
+- Use pagination for large datasets
+- Consider async processing for long tasks
 
 ### Memory Exceeded
 
-**Problem**: Function menggunakan terlalu banyak memory
+**Problem**: Function uses too much memory
 
 **Solution**:
 
 - Process data in chunks
-- Avoid loading large datasets sekaligus
-- Use streaming untuk large files
+- Avoid loading large datasets at once
+- Use streaming for large files
 - Increase memory limit
 
 ### Compilation Error
 
-**Problem**: TypeScript compilation gagal
+**Problem**: TypeScript compilation failed
 
 **Solution**:
 
 - Check syntax errors
 - Use valid TypeScript
 - Avoid unsupported features
-- Test dengan "Validate Code" button
+- Test with the "Validate Code" button
 
 ### Database Connection Error
 
-**Problem**: Tidak bisa connect ke database
+**Problem**: Cannot connect to database
 
 **Solution**:
 
-- Check project ID benar
+- Check the project ID is correct
 - Verify table names (format: `data_{projectId}_{collection}`)
 - Use parameterized queries
 - Check database permissions
@@ -644,7 +644,7 @@ return {
 
 ## Support
 
-Butuh bantuan?
+Need help?
 
 - 📚 [Main Documentation](./README.md)
 - 📖 [API Docs](http://localhost:3000/docs)

@@ -14,7 +14,7 @@ Backend as a Service (BaaS) platform yang memungkinkan pembuatan REST API secara
 ## 📁 Complete File Structure
 
 ```
-baas-poc/
+calmsey-baas/
 │
 ├── src/
 │   ├── lib/                          # Core libraries

@@ -69,6 +69,10 @@ export class DatabaseManagerService {
     dbName: string,
     mainDbUrl: string
   ): Promise<DatabaseConfig> {
+    if (!mainDbUrl || mainDbUrl.trim() === "") {
+      throw new Error("DATABASE_URL environment variable is not set. Cannot create database on same server.");
+    }
+
     const config = this.parseConnectionUrl(mainDbUrl);
 
     // Create database using raw SQL
@@ -99,6 +103,10 @@ export class DatabaseManagerService {
     dbName: string,
     mainDbUrl: string
   ): Promise<DatabaseConfig> {
+    if (!mainDbUrl || mainDbUrl.trim() === "") {
+      throw new Error("DATABASE_URL environment variable is not set. Cannot create database on same server.");
+    }
+
     const config = this.parseConnectionUrl(mainDbUrl);
 
     try {
@@ -126,13 +134,53 @@ export class DatabaseManagerService {
     dbName: string,
     config: DatabaseConfig
   ): Promise<DatabaseConfig> {
-    // This would involve connecting to the custom database server
-    // and creating the database there
-    // For now, return the config as-is
-    return {
+    // Connect to the custom database server and create the database
+    const connectionUrl = this.buildConnectionUrl({
       ...config,
-      database: dbName,
-    };
+      database: config.type === "postgresql" ? "postgres" : "mysql", // Connect to default database first
+    });
+
+    // Create a temporary Prisma client to connect to the custom server
+    const tempClient = new PrismaClient({
+      datasources: {
+        db: {
+          url: connectionUrl,
+        },
+      },
+    });
+
+    try {
+      // Test connection first
+      await tempClient.$connect();
+
+      // Create the new database
+      if (config.type === "postgresql" || !config.type) {
+        // For PostgreSQL, connect to 'postgres' database to create new database
+        await tempClient.$executeRawUnsafe(`CREATE DATABASE "${dbName}";`);
+      } else if (config.type === "mysql") {
+        // For MySQL, we can create database directly
+        await tempClient.$executeRawUnsafe(`CREATE DATABASE \`${dbName}\`;`);
+      }
+
+      return {
+        ...config,
+        database: dbName,
+        type: config.type || "postgresql",
+      };
+    } catch (error: any) {
+      // Ignore error if database already exists
+      if (error.message?.includes("already exists") || error.message?.includes("Duplicate")) {
+        // Database already exists, return config anyway
+        return {
+          ...config,
+          database: dbName,
+          type: config.type || "postgresql",
+        };
+      }
+      throw new Error(`Failed to create database on custom server: ${error.message}`);
+    } finally {
+      await tempClient.$disconnect();
+    }
   }
 
   /**
@@ -180,10 +228,20 @@ export class DatabaseManagerService {
   buildConnectionUrl(config: DatabaseConfig): string {
     const { type = "postgresql", host, port, username, password, database } = config;
 
+    // URL encode username, password, and database name to handle special characters
+    const encodedUsername = encodeURIComponent(username);
+    const encodedPassword = password ? encodeURIComponent(password) : "";
+    const encodedDatabase = encodeURIComponent(database);
+
+    // Handle empty password - use format without password separator
+    const authPart = password 
+      ? `${encodedUsername}:${encodedPassword}@`
+      : `${encodedUsername}@`;
+
     if (type === "postgresql") {
-      return `postgresql://${username}:${password}@${host}:${port}/${database}`;
+      return `postgresql://${authPart}${host}:${port}/${encodedDatabase}`;
     } else if (type === "mysql") {
-      return `mysql://${username}:${password}@${host}:${port}/${database}`;
+      return `mysql://${authPart}${host}:${port}/${encodedDatabase}`;
     } else {
       throw new Error(`Unsupported database type: ${type}`);
     }
@@ -193,19 +251,56 @@ export class DatabaseManagerService {
    * Parse connection URL to extract config
    */
   private parseConnectionUrl(url: string): DatabaseConfig {
-    const match = url.match(/^(postgresql|mysql):\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/);
+    if (!url || url.trim() === "") {
+      throw new Error("Database connection URL is required. Please set DATABASE_URL environment variable.");
+    }
 
-    if (!match) {
-      throw new Error("Invalid database connection URL");
+    // Remove query parameters if present (e.g., ?schema=public)
+    const urlWithoutQuery = url.split("?")[0];
+
+    // More flexible regex that handles:
+    // - Optional password (user@host or user:password@host)
+    // - Special characters in password (URL encoded)
+    // - Query parameters (removed above)
+    // - Optional port
+    // Pattern: postgresql://[user[:password]@]host[:port]/database
+    const matchWithPassword = urlWithoutQuery.match(/^(postgresql|mysql|postgres):\/\/([^:]+):([^@]+)@([^:]+)(?::(\d+))?\/(.+)$/);
+    const matchWithoutPassword = urlWithoutQuery.match(/^(postgresql|mysql|postgres):\/\/([^@]+)@([^:]+)(?::(\d+))?\/(.+)$/);
+
+    let type: string;
+    let username: string;
+    let password: string;
+    let host: string;
+    let port: number;
+    let database: string;
+
+    if (matchWithPassword) {
+      // Format: postgresql://user:password@host:port/database
+      type = matchWithPassword[1] === "postgres" ? "postgresql" : matchWithPassword[1];
+      username = decodeURIComponent(matchWithPassword[2]);
+      password = decodeURIComponent(matchWithPassword[3]);
+      host = matchWithPassword[4];
+      port = matchWithPassword[5] ? parseInt(matchWithPassword[5]) : (type === "postgresql" ? 5432 : 3306);
+      database = matchWithPassword[6].split("?")[0];
+    } else if (matchWithoutPassword) {
+      // Format: postgresql://user@host:port/database (no password)
+      type = matchWithoutPassword[1] === "postgres" ? "postgresql" : matchWithoutPassword[1];
+      username = decodeURIComponent(matchWithoutPassword[2]);
+      password = ""; // Empty password
+      host = matchWithoutPassword[3];
+      port = matchWithoutPassword[4] ? parseInt(matchWithoutPassword[4]) : (type === "postgresql" ? 5432 : 3306);
+      database = matchWithoutPassword[5].split("?")[0];
+    } else {
+      throw new Error(`Invalid database connection URL format. Expected format: postgresql://user[:password]@host[:port]/database. Got: ${url.substring(0, 50)}...`);
     }
 
     return {
-      type: match[1] as "postgresql" | "mysql",
-      username: match[2],
-      password: match[3],
-      host: match[4],
-      port: parseInt(match[5]),
-      database: match[6],
+      type: type as "postgresql" | "mysql",
+      username,
+      password,
+      host,
+      port,
+      database,
     };
   }
 

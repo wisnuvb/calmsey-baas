@@ -1,6 +1,6 @@
 # Examples - Calmsey BaaS
 
-Contoh-contoh praktis penggunaan Calmsey BaaS untuk berbagai use case.
+Practical examples of using Calmsey BaaS for various use cases.
 
 ## Table of Contents
 
@@ -725,25 +725,25 @@ curl -X PATCH http://localhost:3000/api/data/todo-app/tasks/task-123 \
 
 ### 1. Field Naming
 
-- Gunakan camelCase untuk nama field
-- Gunakan nama yang descriptive
-- Hindari reserved keywords (id, createdAt, updatedAt, deletedAt)
+- Use camelCase for field names
+- Use descriptive names
+- Avoid reserved keywords (id, createdAt, updatedAt, deletedAt)
 
 ### 2. Validation
 
-- Selalu set `required: true` untuk field penting
-- Gunakan `unique: true` untuk field yang harus unik (email, slug, sku)
-- Set `validation.enum` untuk field dengan nilai terbatas
-- Set `validation.min` dan `max` untuk number fields
+- Always set `required: true` for important fields
+- Use `unique: true` for fields that must be unique (email, slug, sku)
+- Set `validation.enum` for fields with limited values
+- Set `validation.min` and `max` for number fields
 
 ### 3. Timestamps
 
-- Enable `timestamps: true` untuk audit trail
-- Enable `softDelete: true` jika data perlu di-restore
+- Enable `timestamps: true` for audit trails
+- Enable `softDelete: true` if data needs to be restored
 
 ### 4. JSON Fields
 
-Gunakan JSON field untuk:
+Use JSON fields for:
 
 - Arrays (tags, images, items)
 - Nested objects (address, metadata)
@@ -751,10 +751,10 @@ Gunakan JSON field untuk:
 
 ### 5. Performance
 
-- Create indexes untuk field yang sering di-query
-- Gunakan pagination untuk list endpoints
-- Filter hanya field yang diperlukan
+- Create indexes for frequently queried fields
+- Use Pagination for endpoints list
+- Filter only required fields
 
 ---
 
-Untuk pertanyaan atau contoh use case lainnya, silakan buka issue di repository!
+For questions or other use case examples, please open an issue in the repository!

@@ -8,6 +8,9 @@ pnpm-lock.yaml
 dist/
 build/
 
+.functions
+.cursor
+
 # Environment variables
 .env
 .env.local

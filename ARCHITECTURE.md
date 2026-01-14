@@ -1,6 +1,6 @@
 # Technical Architecture - Calmsey BaaS
 
-Dokumentasi mendalam tentang arsitektur teknis dan design decisions.
+In-depth documentation of technical architecture and design decisions.
 
 ## Table of Contents
 

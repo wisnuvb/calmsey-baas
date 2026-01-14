@@ -1,19 +1,19 @@
-# Calmsey BaaS (Backend as a Service)
+#Calmsey BaaS - Self-hosted BaaS & API Platform
 
-Backend as a Service platform yang memungkinkan Anda membuat REST API secara dinamis berdasarkan schema yang didefinisikan. Dibangun dengan Node.js, Fastify, dan Prisma.
+Build production-ready backends without writing boilerplate code. A Backend as a Service platform that allows you to dynamically create REST APIs based on a defined schema. Built with Node.js, Fastify, and Prisma.
 
-## ✨ Fitur
+## ✨ Features
 
-- 🚀 **Dynamic API Generation** - Buat REST API otomatis berdasarkan schema JSON
-- ⚡ **Custom Functions** - Serverless functions dengan TypeScript/JavaScript (NEW!)
+- 🚀 **Dynamic API Generation** - Automatically create REST APIs based on JSON schemas
+- ⚡ **Custom Functions** - Serverless functions with TypeScript/JavaScript (NEW!)
 - 🔐 **Authentication & Authorization** - JWT authentication + API key management
-- 📊 **Multi-tenant** - Project isolation dengan database per project
-- 🗄️ **Database Flexibility** - Support PostgreSQL dan MySQL
-- 📁 **File Upload** - Local storage dan cloud storage (S3 ready)
-- 🔍 **Query & Filtering** - Pagination, sorting, dan filtering built-in
-- 📝 **Schema Validation** - Validasi data otomatis berdasarkan schema
-- 🗑️ **Soft Delete** - Optional soft delete untuk collections
-- ⏰ **Timestamps** - Auto-generated createdAt dan updatedAt
+- 📊 **Multi-tenant** - Project isolation with a database per project
+- 🗄️ **Database Flexibility** - Supports PostgreSQL and MySQL
+- 📁 **File Upload** - Local and cloud storage (S3 ready)
+- 🔍 **Query & Filtering** - Built-in pagination, sorting, and filtering
+- 📝 **Schema Validation** - Automatic data validation based on schemas
+- 🗑️ **Soft Delete** - Optional soft delete for collections
+- ⏰ **Timestamps** - Auto-generated createdAt and updatedAt
 
 ## 🏗️ Architecture
 
@@ -56,16 +56,17 @@ Backend as a Service platform yang memungkinkan Anda membuat REST API secara din
 
 ### Prerequisites
 
-- Node.js 20 atau lebih tinggi
-- PostgreSQL 14+ atau MySQL 8+
-- npm atau yarn
+- Node.js 20 or higher
+- PostgreSQL 14+ or MySQL 8+
+- npm or yarn
 
 ### Setup
 
-1. **Clone atau copy project**
+1. **Clone or copy project**
 
 ```bash
-cd baas-poc
+git clone https://github.com/wisnuvb/calmsey-baas.git
+cd calmsey-baas
 ```
 
 2. **Install dependencies**
@@ -80,14 +81,14 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` dan sesuaikan dengan konfigurasi Anda:
+Edit `.env` and adjust it to your configuration:
 
 ```env
-# Database URL (pilih salah satu)
+# Database URL (choose one)
 # PostgreSQL
 DATABASE_URL="postgresql://user:password@localhost:5432/baas_poc"
 
-# MySQL (uncomment jika pakai MySQL)
+# MySQL (uncomment if using MySQL)
 # DATABASE_URL="mysql://user:password@localhost:3306/baas_poc"
 
 # JWT Secret
@@ -100,22 +101,22 @@ MAX_FILE_SIZE=10485760
 # Storage (local/s3)
 STORAGE_TYPE=local
 
-# AI (optional, untuk AI-assisted Function Editor)
-# Wajib: API key DeepSeek Anda
+# AI (optional, for AI-assisted Function Editor)
+# Required: Your DeepSeek API key
 DEEPSEEK_API_KEY="your-deepseek-api-key"
-# Opsional: Base URL (biarkan default jika tidak yakin)
+# Optional: Base URL (leave default if unsure)
 DEEPSEEK_API_BASE="https://api.deepseek.com/v1"
-# Opsional: Model
+# Optional: Model
 DEEPSEEK_MODEL="deepseek-chat"
 ```
 
-4. **Update Prisma schema jika pakai MySQL**
+4. **Update Prisma schema if using MySQL**
 
-Jika menggunakan MySQL, edit `prisma/schema.prisma`:
+If using MySQL, edit `prisma/schema.prisma`:
 
 ```prisma
 datasource db {
-  provider = "mysql"  // ganti dari "postgresql"
+  provider = "mysql"  // replace from "postgresql"
   url      = env("DATABASE_URL")
 }
 ```
@@ -133,17 +134,17 @@ npm run prisma:migrate
 npm run dev
 ```
 
-Server akan berjalan di `http://localhost:3000`
+The server will run at `http://localhost:3000`
 
 ### AI Code Generation (DeepSeek)
 
-Dashboard Function Editor mendukung generate kode function via AI. Untuk mengaktifkan:
+The Function Editor dashboard supports generating function code via AI. To enable it:
 
-- Set `DEEPSEEK_API_KEY` di `.env` backend
-- Jalankan server (`npm run dev`)
-- Buka Dashboard → Functions → Create/Edit → klik "✨ Generate with AI"
+- Set `DEEPSEEK_API_KEY` in the backend `.env`
+- Run the server (`npm run dev`)
+- Go to Dashboard → Functions → Create/Edit → click "✨ Generate with AI"
 
-Catatan: Integrasi ini menggunakan endpoint kompatibel OpenAI (`/v1/chat/completions`). Jika DeepSeek Anda memakai base URL berbeda, atur `DEEPSEEK_API_BASE`.
+Note: This integration uses an OpenAI-compatible endpoint (`/v1/chat/completions`). If your DeepSeek uses a different base URL, set `DEEPSEEK_API_BASE`.
 
 ## 📚 API Documentation
 
@@ -155,10 +156,10 @@ http://localhost:3000/api
 
 ### Authentication
 
-API menggunakan dua jenis authentication:
+The API uses two types of authentication:
 
-1. **JWT Token** - Untuk management API (user, project, collection)
-2. **API Key** - Untuk dynamic data API
+1. JWT Token - For API management (user, project, collection)
+2. API Key - For dynamic data APIs
 
 ---
 
@@ -370,13 +371,13 @@ Content-Type: application/json
 
 ## 🚀 Dynamic Data API (Auto-generated)
 
-Setelah collection dibuat, API akan otomatis tersedia di:
+Once the collection is created, the API will be automatically available in:
 
 ```
 /api/data/:projectSlug/:collectionSlug
 ```
 
-**Authentication:** Gunakan header `X-API-Key: sk_...`
+**Authentication:** Use the header `X-API-Key: sk_...`
 
 ### Create Item
 
@@ -531,7 +532,7 @@ file: [binary]
 ### Project Structure
 
 ```
-baas-poc/
+calmsey-baas/
 ├── prisma/
 │   └── schema.prisma          # Database schema
 ├── src/
@@ -611,18 +612,18 @@ CMD ["npm", "start"]
 
 ## 🎯 Next Steps
 
-Untuk pengembangan lebih lanjut, berikut fitur yang bisa ditambahkan:
+For further development, the following features can be added:
 
-1. **Email Integration** - Nodemailer untuk transactional emails
-2. **Real-time** - WebSocket/SSE untuk live updates
-3. **GraphQL** - Alternative API dengan GraphQL
-4. **Relations** - One-to-many, many-to-many relationships
-5. **Webhooks** - Event notifications
-6. **Rate Limiting** - API throttling
-7. **Caching** - Redis untuk performance
-8. **Search** - Full-text search dengan Elasticsearch
-9. **Admin Dashboard** - Web UI untuk management
-10. **API Documentation** - Auto-generated Swagger/OpenAPI
+1. Email Integration - Nodemailer for transactional emails
+2. Real-time - WebSocket/SSE for live updates
+3. GraphQL - Alternative API with GraphQL
+4. Relationships - One-to-many, many-to-many relationships
+5. Webhooks - Event notifications
+6. Rate Limiting - API throttling
+7. Caching - Redis for performance
+8. Search - Full-text search with Elasticsearch
+9. Admin Dashboard - Web UI for management
+10. API Documentation - Auto-generated Swagger/OpenAPI
 
 ---
 
@@ -634,10 +635,10 @@ MIT
 
 ## 🤝 Contributing
 
-Feel free to contribute dan improve PoC ini!
+Feel free to contribute and improve this project!
 
 ---
 
 ## 📞 Support
 
-Jika ada pertanyaan atau issue, silakan buat issue di repository.
+If you have any questions or issues, please create an issue in the repository.
