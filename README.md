@@ -1,4 +1,4 @@
-#Calmsey BaaS - Self-hosted BaaS & API Platform
+# Calmsey BaaS - Self-hosted BaaS & API Platform
 
 Build production-ready backends without writing boilerplate code. A Backend as a Service platform that allows you to dynamically create REST APIs based on a defined schema. Built with Node.js, Fastify, and Prisma.
 
